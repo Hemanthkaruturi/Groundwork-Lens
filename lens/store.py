@@ -13,7 +13,7 @@ from typing import Any
 
 from lens.crypto import KeyManager
 
-SCHEMA_VERSION = 1
+SCHEMA_VERSION = 2
 
 _MIGRATIONS: list[tuple[int, str]] = [
     (
@@ -115,7 +115,18 @@ _MIGRATIONS: list[tuple[int, str]] = [
         );
         """,
     ),
+    (
+        2,
+        """
+        ALTER TABLE projects ADD COLUMN tracked_branch TEXT NOT NULL DEFAULT '';
+        """,
+    ),
 ]
+
+
+def project_branch(project: dict[str, Any]) -> str:
+    """The branch Lens reads for a project: the one a person picked, else the host's default."""
+    return str(project.get("tracked_branch") or project.get("default_branch") or "main")
 
 
 def _utc_now() -> str:
@@ -372,6 +383,17 @@ class LensStore:
     def set_project_idle_days(self, project_id: int, idle_days: int) -> None:
         with self._lock:
             self._conn.execute("UPDATE projects SET idle_days = ? WHERE id = ?", (max(1, idle_days), project_id))
+            self._conn.commit()
+
+    def set_project_tracked_branch(self, project_id: int, branch: str) -> None:
+        """Pin the branch Lens reads. An empty string follows the host's default branch."""
+        with self._lock:
+            self._conn.execute("UPDATE projects SET tracked_branch = ? WHERE id = ?", (branch.strip(), project_id))
+            self._conn.commit()
+
+    def set_project_default_branch(self, project_id: int, branch: str) -> None:
+        with self._lock:
+            self._conn.execute("UPDATE projects SET default_branch = ? WHERE id = ?", (branch, project_id))
             self._conn.commit()
 
     def set_project_refused_push(self, project_id: int, msg: str) -> None:

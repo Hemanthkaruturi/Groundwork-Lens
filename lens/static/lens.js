@@ -94,6 +94,29 @@
     });
   }
 
+  // Project picker: fill a repo's branch suggestions the first time its field is used
+  document.addEventListener("focusin", function (ev) {
+    var input = ev.target;
+    if (!input.matches || !input.matches("input[data-branches-repo]")) return;
+    if (input.getAttribute("data-branches-loaded")) return;
+    input.setAttribute("data-branches-loaded", "1");
+    var list = document.getElementById(input.getAttribute("list"));
+    if (!list) return;
+    var qs = new URLSearchParams();
+    qs.set("host_id", input.getAttribute("data-branches-host"));
+    qs.set("repo", input.getAttribute("data-branches-repo"));
+    fetch("/api/branches?" + qs.toString(), { credentials: "same-origin" })
+      .then(function (r) { return r.json(); })
+      .then(function (data) {
+        (data.branches || []).forEach(function (name) {
+          var opt = document.createElement("option");
+          opt.value = name;
+          list.appendChild(opt);
+        });
+      })
+      .catch(function () {});
+  });
+
   // Format ISO timestamps in viewer's local timezone
   var timeEls = document.querySelectorAll("time[data-iso]");
   for (var i = 0; i < timeEls.length; i++) {

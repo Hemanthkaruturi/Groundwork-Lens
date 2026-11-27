@@ -25,7 +25,7 @@ from lens.hosts import adapter_for_host
 from lens.hosts.base import HostAdapter, HostError, PullRequestInfo
 from lens.hosts.local_git import LocalGitAdapter
 from lens.images import MAX_IMAGES_PER_REQUEST, validate_and_strip_image
-from lens.store import LensStore
+from lens.store import LensStore, project_branch
 from lens.sync import SyncWorker, _parse_gitmodules_entries
 
 
@@ -103,7 +103,7 @@ class LensWriter:
     ) -> tuple[str, str]:
         """Return (repo_full_name, default_branch) for workspace or single/sub-repo target."""
         if not repo_override or repo_override in ("Several", "Not sure", project["display_name"], project["repo_full_name"]):
-            return project["repo_full_name"], project["default_branch"] or "main"
+            return project["repo_full_name"], project_branch(project)
 
         snap = self.store.get_latest_snapshot(project["id"])
         # Check workspace .gitmodules in mirror if available
@@ -255,7 +255,7 @@ class LensWriter:
             if target_repo != proj["repo_full_name"] and proj["is_workspace"]:
                 ws_tmp, ws_dir, _ = self._prepare_write_worktree(
                     proj["repo_full_name"],
-                    proj["default_branch"] or "main",
+                    project_branch(proj),
                     adapter,
                     {"user_login": "", "user_token": user_token, "sign_in_mode": "A"},
                 )
@@ -449,7 +449,7 @@ class LensWriter:
             ws_dir: Path | None = None
             if target_repo != proj["repo_full_name"] and proj["is_workspace"]:
                 ws_tmp, ws_dir, _ = self._prepare_write_worktree(
-                    proj["repo_full_name"], proj["default_branch"] or "main", adapter, user
+                    proj["repo_full_name"], project_branch(proj), adapter, user
                 )
 
             doc_info = run_read_doc(work_dir, rel_path, workspace_repo=ws_dir)
@@ -564,7 +564,7 @@ class LensWriter:
             ws_dir: Path | None = None
             if target_repo != proj["repo_full_name"] and proj["is_workspace"]:
                 ws_tmp, ws_dir, _ = self._prepare_write_worktree(
-                    proj["repo_full_name"], proj["default_branch"] or "main", adapter, user
+                    proj["repo_full_name"], project_branch(proj), adapter, user
                 )
 
             doc_info = run_read_doc(work_dir, rel_path, workspace_repo=ws_dir)

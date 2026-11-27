@@ -6,6 +6,7 @@
 <h1 class="page-title">Choose projects to follow</h1>
 <p class="page-lede mb-md">
   Pick the repositories or GroundWork workspaces you want on your dashboard. Following a workspace automatically includes its sub-repos.
+  Lens reads each repo's default branch unless you name another branch.
 </p>
 
 {% if repos %}
@@ -35,6 +36,19 @@
         {% elif not r.has_groundwork %}
           <div class="meta-line mt-xs">GroundWork is not set up here yet.</div>
         {% endif %}
+        <div class="branch-field">
+          <span class="branch-field-label">Branch</span>
+          <input type="text" class="branch-input"
+                 name="branch:{{ r.host_id }}:{{ r.full_name }}"
+                 value="{{ r.tracked_branch }}"
+                 placeholder="{{ r.default_branch }} (default)"
+                 aria-label="Branch to follow in {{ r.full_name }}"
+                 list="branch-list-{{ loop.index }}"
+                 data-branches-host="{{ r.host_id }}"
+                 data-branches-repo="{{ r.full_name }}"
+                 autocomplete="off" spellcheck="false">
+          <datalist id="branch-list-{{ loop.index }}"></datalist>
+        </div>
       </div>
     </label>
     {% endfor %}
@@ -54,6 +68,10 @@
     <div class="form-group">
       <label class="field-label" for="public-repo">Repository URL or owner/name</label>
       <input id="public-repo" name="repo" type="text" placeholder="owner/repo or https://github.com/owner/repo" required>
+    </div>
+    <div class="form-group">
+      <label class="field-label" for="public-branch">Branch (optional)</label>
+      <input id="public-branch" name="branch" type="text" placeholder="Default branch" autocomplete="off" spellcheck="false">
     </div>
     <button class="btn btn-secondary" type="submit">Follow public repo</button>
   </form>

@@ -177,6 +177,18 @@ class SyncWorker:
         else:
             _run_git(mirror_dir, ["remote", "set-url", "origin", clone_url])
 
+    def list_remote_branches(self, repo_dir: Path, clone_url: str) -> list[str]:
+        """Branch names on the remote, read with git so it works the same for every host."""
+        res = _run_git(repo_dir, ["ls-remote", "--heads", clone_url])
+        if res.returncode != 0:
+            raise HostError(res.stderr.strip() or "Could not list branches")
+        out: list[str] = []
+        for line in res.stdout.splitlines():
+            parts = line.split()
+            if len(parts) == 2 and parts[1].startswith("refs/heads/"):
+                out.append(parts[1][len("refs/heads/"):])
+        return sorted(out)
+
     def _ls_remote_sha(self, repo_dir: Path, clone_url: str, ref: str) -> str:
         res = _run_git(repo_dir, ["ls-remote", clone_url, f"refs/heads/{ref}", f"refs/pull/*/head", "HEAD"])
         if res.returncode != 0:
@@ -263,7 +275,11 @@ class SyncWorker:
                 self.store.update_project_sync(project_id, "empty", "This repo is empty")
                 return None
 
-            default_branch = repo_info.default_branch or proj["default_branch"] or "main"
+            host_default = repo_info.default_branch or proj["default_branch"] or "main"
+            if host_default != proj["default_branch"]:
+                self.store.set_project_default_branch(project_id, host_default)
+            tracked_branch = str(proj.get("tracked_branch") or "")
+            branch = tracked_branch or host_default
             mirror_dir = self.mirror_dir_for(project_id)
             clone_url = adapter.get_clone_url_with_auth(proj["repo_full_name"], user_token=user_token)
 
@@ -273,8 +289,22 @@ class SyncWorker:
                 self.store.update_project_sync(project_id, "unreachable", str(exc))
                 return None
 
-            remote_sha = self._ls_remote_sha(mirror_dir, clone_url, default_branch)
-            latest_snap = self.store.get_latest_snapshot(project_id, default_branch)
+            try:
+                remote_branches = self.list_remote_branches(mirror_dir, clone_url) if tracked_branch else []
+            except HostError as exc:
+                self.store.update_project_sync(project_id, "unreachable", str(exc))
+                return None
+            if tracked_branch and tracked_branch not in remote_branches:
+                self.store.update_project_sync(
+                    project_id,
+                    "error",
+                    f"The branch '{tracked_branch}' Lens follows no longer exists on the host. "
+                    "Choose another branch on the Choose projects page",
+                )
+                return None
+
+            remote_sha = self._ls_remote_sha(mirror_dir, clone_url, branch)
+            latest_snap = self.store.get_latest_snapshot(project_id, branch)
             # Re-export when a workspace sub-repo failed last time, even if the
             # main commit is unchanged: access may have been granted since.
             had_sub_errors = bool(latest_snap and (latest_snap.get("data") or {}).get("sub_repo_errors"))
@@ -293,8 +323,8 @@ class SyncWorker:
                         proj=proj,
                         adapter=adapter,
                         mirror_dir=mirror_dir,
-                        ref_name=default_branch,
-                        fetch_spec=f"+refs/heads/{default_branch}:refs/remotes/origin/{default_branch}",
+                        ref_name=branch,
+                        fetch_spec=f"+refs/heads/{branch}:refs/remotes/origin/{branch}",
                         export_paths=export_paths,
                         user_token=user_token,
                     )
@@ -336,7 +366,7 @@ class SyncWorker:
             # Sync open PR heads that touch GroundWork paths (E2, E13, N2), including workspace sub-repos
             try:
                 pr_targets: list[tuple[str, str, Path]] = [("", proj["repo_full_name"], mirror_dir)]
-                gm_res = _run_git(mirror_dir, ["show", f"refs/remotes/origin/{default_branch}:.gitmodules"])
+                gm_res = _run_git(mirror_dir, ["show", f"refs/remotes/origin/{branch}:.gitmodules"])
                 if gm_res.returncode == 0:
                     for entry in _parse_gitmodules_entries(gm_res.stdout, proj["repo_full_name"]):
                         pr_targets.append(

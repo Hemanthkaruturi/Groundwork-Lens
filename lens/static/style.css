@@ -1960,6 +1960,31 @@ details[open] > summary::before {
   min-width: 0;
 }
 
+.branch-field {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-top: 10px;
+}
+
+.choice:not(:has(input[type="checkbox"]:checked)) .branch-field {
+  display: none;
+}
+
+.branch-field-label {
+  font-size: 13px;
+  color: var(--ink-soft);
+  flex-shrink: 0;
+}
+
+.branch-field input.branch-input {
+  max-width: 280px;
+  min-height: 32px;
+  padding: 5px 9px;
+  font-family: var(--font-mono);
+  font-size: 13px;
+}
+
 /* ---------- Setup wizard steps ---------- */
 
 .step-head {

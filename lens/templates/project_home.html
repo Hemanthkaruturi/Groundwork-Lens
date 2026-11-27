@@ -6,6 +6,9 @@
   <div>
     <h1 class="page-title">{{ project.display_name }}</h1>
     <p class="page-lede">What is waiting on whom, what needs sign-off, and what is being built.</p>
+    {% if project.tracked_branch %}
+      <p class="meta-line mt-xs">Following branch <span class="mono-id">{{ project.tracked_branch }}</span> · <a href="/projects/select">Change</a></p>
+    {% endif %}
   </div>
 </div>
 

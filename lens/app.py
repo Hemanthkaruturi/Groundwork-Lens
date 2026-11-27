@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import json
 import os
+import re
 import secrets
 from pathlib import Path
 from typing import Any
@@ -19,7 +20,7 @@ from lens.hosts.github import GitHubAdapter, app_install_url, build_app_manifest
 from lens.hosts.gitlab import GitLabAdapter
 from lens.markdown_safe import render_markdown_safe
 from lens.snapshot_merge import format_change_actor, merge_project_snapshots, relative_time, user_aliases_set
-from lens.store import LensStore
+from lens.store import LensStore, project_branch
 from lens.sync import SyncWorker
 from lens.writer import LensWriter, WriteError
 from lens.wsgi import Request, Response, WebApp
@@ -59,6 +60,21 @@ def _is_author_session(session: dict[str, Any], author: str, people: list[dict[s
         return False
     aliases = user_aliases_set(session, people)
     return author.strip().lower() in aliases
+
+
+_BRANCH_NAME_RE = re.compile(r"^[A-Za-z0-9._/-]+$")
+
+
+def _valid_branch_name(name: str) -> bool:
+    """Allow ordinary git branch names; refuse anything git could read as an option or a range."""
+    return (
+        len(name) <= 200
+        and bool(_BRANCH_NAME_RE.match(name))
+        and not name.startswith(("-", "/", "."))
+        and not name.endswith(("/", ".", ".lock"))
+        and ".." not in name
+        and "//" not in name
+    )
 
 
 def create_app(data_dir: Path | str | None = None, start_worker: bool = False) -> WebApp:
@@ -550,6 +566,7 @@ def create_app(data_dir: Path | str | None = None, start_worker: bool = False) -
             return redir
         if req.method == "POST":
             selected = set(req.form_list("repo_keys"))
+            bad_branches: list[str] = []
             existing = {f"{p['host_id']}:{p['repo_full_name']}": p["id"] for p in ctx.store.list_projects()}
             for key in selected:
                 if ":" not in key:
@@ -572,10 +589,24 @@ def create_app(data_dir: Path | str | None = None, start_worker: bool = False) -
                 except Exception:
                     pid = existing.get(key) or ctx.store.upsert_project(hid, full_name, full_name.split("/")[-1])
                 ctx.store.follow_project(_user_key(sess), pid)
+                branch = req.form_val(f"branch:{key}").strip()
+                if branch and not _valid_branch_name(branch):
+                    bad_branches.append(f"{full_name} ({branch})")
+                    branch = ""
+                proj = ctx.store.get_project(pid) or {}
+                if branch == proj.get("default_branch"):
+                    branch = ""  # same as the host default: keep following the default if it changes
+                if branch != (proj.get("tracked_branch") or ""):
+                    ctx.store.set_project_tracked_branch(pid, branch)
                 ctx.sync_worker.sync_project(pid, user_token=sess.get("user_token", ""))
             for key, pid in existing.items():
                 if key not in selected:
                     ctx.store.unfollow_project(_user_key(sess), pid)
+            if bad_branches:
+                return _redirect_with(
+                    "/projects/select",
+                    err="These branch names are not valid, so Lens kept the default branch: " + ", ".join(bad_branches),
+                )
             return app.redirect("/")
 
         followed_ids = {p["id"] for p in ctx.store.list_followed_projects(_user_key(sess))}
@@ -590,7 +621,7 @@ def create_app(data_dir: Path | str | None = None, start_worker: bool = False) -
                 for r in adapter.list_repos(user_token=sess.get("user_token", "")):
                     key = f"{host['id']}:{r.full_name}"
                     p = proj_by_key.get(key)
-                    snap = ctx.store.get_latest_snapshot(p["id"]) if p else None
+                    snap = ctx.store.get_latest_snapshot(p["id"], project_branch(p)) if p else None
                     gw_stage = ((snap or {}).get("data") or {}).get("groundwork", {}).get("stage", "not-started")
                     repos_vm.append(
                         {
@@ -598,6 +629,8 @@ def create_app(data_dir: Path | str | None = None, start_worker: bool = False) -
                             "full_name": r.full_name,
                             "name": r.name,
                             "followed": bool(p and p["id"] in followed_ids),
+                            "default_branch": r.default_branch or "main",
+                            "tracked_branch": (p or {}).get("tracked_branch") or "",
                             "is_workspace": bool(p and p["is_workspace"]),
                             # None = Lens has not read this repo yet, so it cannot know.
                             "has_groundwork": (
@@ -644,12 +677,16 @@ def create_app(data_dir: Path | str | None = None, start_worker: bool = False) -
             )
         else:
             hid = host["id"]
+        branch = req.form_val("branch").strip()
+        if branch and not _valid_branch_name(branch):
+            return _redirect_with("/projects/select", err=f"'{branch}' is not a valid branch name.")
         pid = ctx.store.upsert_project(
             host_id=hid,
             repo_full_name=full_name,
             display_name=full_name.split("/")[-1],
             is_public=True,
         )
+        ctx.store.set_project_tracked_branch(pid, branch)
         ctx.store.follow_project(_user_key(sess), pid)
         ctx.sync_worker.sync_project(pid, force=True)
         return app.redirect(f"/projects/{pid}")
@@ -666,7 +703,7 @@ def create_app(data_dir: Path | str | None = None, start_worker: bool = False) -
         for proj in followed:
             if not _check_project_access(req, proj):
                 continue
-            main_snap = ctx.store.get_latest_snapshot(proj["id"])
+            main_snap = ctx.store.get_latest_snapshot(proj["id"], project_branch(proj))
             pr_snaps = ctx.store.get_open_pr_snapshots(proj["id"])
             sbs = ctx.store.list_send_backs(proj["id"])
             vm = merge_project_snapshots(proj, main_snap, pr_snaps, send_backs=sbs, user=sess)
@@ -687,7 +724,7 @@ def create_app(data_dir: Path | str | None = None, start_worker: bool = False) -
         proj = ctx.store.get_project(pid)
         if not proj or not _check_project_access(req, proj):
             return None, None, Response("Project not found or access denied", status=404, content_type="text/plain")
-        main_snap = ctx.store.get_latest_snapshot(pid)
+        main_snap = ctx.store.get_latest_snapshot(pid, project_branch(proj))
         if main_snap is None and proj.get("removed_groundwork_at"):
             main_snap = ctx.store.get_last_groundwork_snapshot(pid)
         pr_snaps = ctx.store.get_open_pr_snapshots(pid)
@@ -832,7 +869,7 @@ def create_app(data_dir: Path | str | None = None, start_worker: bool = False) -
         assert sess is not None
         rel_path = req.arg("path")
         repo_override = req.arg("repo")
-        target_ref = req.arg("ref") or proj["default_branch"]
+        target_ref = req.arg("ref") or project_branch(proj)
         pr_num = int(req.arg("pr") or "0")
         if not rel_path:
             return Response("Missing document path", status=400, content_type="text/plain")
@@ -1202,6 +1239,31 @@ def create_app(data_dir: Path | str | None = None, start_worker: bool = False) -
         idle_days = int(req.form_val("idle_days") or "14")
         ctx.store.set_project_idle_days(pid, idle_days)
         return _redirect_with("/admin/health", info="Project settings saved.")
+
+    @app.route("/api/branches", methods=("GET",))
+    def api_branches(req: Request) -> Response:
+        sess, redir = _require_session(req)
+        if redir:
+            return app.json({"branches": []}, status=401)
+        try:
+            hid = int(req.arg("host_id") or "0")
+        except ValueError:
+            hid = 0
+        repo = req.arg("repo")
+        host = ctx.store.get_host(hid) if hid else None
+        if not host or not repo:
+            return app.json({"branches": []}, status=404)
+        if host["kind"] == "local" and not sess.get("is_demo"):
+            return app.json({"branches": []}, status=404)
+        if not _check_project_access(req, {"host_id": hid, "repo_full_name": repo}):
+            return app.json({"branches": []}, status=404)
+        adapter = adapter_for_host(host)
+        try:
+            clone_url = adapter.get_clone_url_with_auth(repo, user_token=sess.get("user_token", ""))
+            branches = ctx.sync_worker.list_remote_branches(ctx.store.data_dir, clone_url)
+        except Exception:
+            return app.json({"branches": [], "error": "Lens could not list branches for this repo."}, status=502)
+        return app.json({"branches": branches})
 
     # Live markdown preview API
     @app.route("/api/preview-markdown", methods=("POST",))
