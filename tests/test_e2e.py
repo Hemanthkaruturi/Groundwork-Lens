@@ -66,9 +66,9 @@ class TestEndToEnd(unittest.TestCase):
                 # Try demo mode -> seeds real git workspace and renders project home
                 with opener.open(f"{base}/demo") as r:
                     demo_html = r.read().decode("utf-8")
-                    self.assertIn("SignalFarming (Demo)", demo_html)
+                    self.assertIn("Brightwater (Demo)", demo_html)
                     self.assertIn("Excel export", demo_html)
-                    self.assertIn("Hemanth Karuturi", demo_html)
+                    self.assertIn("Maya Chen", demo_html)
                     self.assertIn("Discovery price stale", demo_html)
                     self.assertIn("in PR #42", demo_html)
                     self.assertIn("Older work", demo_html)
@@ -82,36 +82,36 @@ class TestEndToEnd(unittest.TestCase):
             app = create_app(Path(td) / "data", start_worker=False)
             client = TestClient(app)
 
-            # Enter demo as Amit Singh (leader & named approver on RFC-0013 and requester of REQ-0001)
+            # Enter demo as Jordan Reyes (leader & named approver on RFC-0013 and requester of REQ-0001)
             st, _, body = client.get("/demo", follow_redirects=True)
             self.assertEqual(st, 200)
             html = body.decode("utf-8")
-            self.assertIn("SignalFarming (Demo)", html)
+            self.assertIn("Brightwater (Demo)", html)
 
             # Find demo workspace project id
             projs = app.ctx.store.list_projects(include_demo=True)
             ws_proj = next(p for p in projs if p["is_workspace"])
             pid = ws_proj["id"]
 
-            # "Waiting on me" filter shows Amit's approval & question items
+            # "Waiting on me" filter shows Jordan's approval & question items
             st_mine, _, mine_body = client.get(f"/projects/{pid}?mine=1")
             self.assertEqual(st_mine, 200)
             self.assertIn("Filter contacts by seniority", mine_body.decode("utf-8"))
 
             # Answer REQ-0001 questions via form
-            st_req, _, req_html = client.get(f"/projects/{pid}/item/researchTrail/REQ-0001")
+            st_req, _, req_html = client.get(f"/projects/{pid}/item/fieldNotes/REQ-0001")
             self.assertEqual(st_req, 200)
             csrf = _extract_csrf(req_html)
             st_ans, _, ans_html = client.post(
                 f"/projects/{pid}/request/REQ-0001/answer",
-                form={"_csrf": csrf, "repo_override": "researchTrail", "answer_Q1": "Separate options"},
+                form={"_csrf": csrf, "repo_override": "fieldNotes", "answer_Q1": "Separate options"},
                 follow_redirects=True,
             )
             self.assertEqual(st_ans, 200)
             self.assertIn("Being discussed", ans_html.decode("utf-8"))
 
-            # Read, Edit, and Approve RFC-0013 as named approver Amit Singh
-            doc_url = f"/projects/{pid}/doc?path=DECISIONS%2FRFC-0013-alert-digest.md&repo=researchTrail&ref=main"
+            # Read, Edit, and Approve RFC-0013 as named approver Jordan Reyes
+            doc_url = f"/projects/{pid}/doc?path=DECISIONS%2FRFC-0013-alert-digest.md&repo=fieldNotes&ref=main"
             st_doc, _, doc_html = client.get(doc_url)
             self.assertEqual(st_doc, 200)
             doc_text = doc_html.decode("utf-8")
@@ -128,7 +128,7 @@ class TestEndToEnd(unittest.TestCase):
                 form={
                     "_csrf": csrf_doc,
                     "path": "DECISIONS/RFC-0013-alert-digest.md",
-                    "repo": "researchTrail",
+                    "repo": "fieldNotes",
                     "ref": "main",
                     "pr": "0",
                     "expect_hash": expect_h,
@@ -140,11 +140,11 @@ class TestEndToEnd(unittest.TestCase):
             self.assertEqual(st_ed, 200)
             self.assertIn("Approved", ed_html.decode("utf-8"))
 
-            # Verify approvals.json on disk in demo_repos/researchTrail contains via: "lens"
-            rt_approvals = json.loads((app.ctx.data_dir / "demo_repos" / "researchTrail" / ".groundwork" / "approvals.json").read_text("utf-8"))
+            # Verify approvals.json on disk in demo_repos/fieldNotes contains via: "lens"
+            rt_approvals = json.loads((app.ctx.data_dir / "demo_repos" / "fieldNotes" / ".groundwork" / "approvals.json").read_text("utf-8"))
             rfc13_rec = rt_approvals["DECISIONS/RFC-0013-alert-digest.md"]
             self.assertEqual(rfc13_rec["signers"][0]["via"], "lens")
-            self.assertEqual(rfc13_rec["signers"][0]["who"], "amit@signalfarming.example")
+            self.assertEqual(rfc13_rec["signers"][0]["who"], "jordan@brightwater.example")
 
             # Submit a feature request with PNG screenshot via multipart form
             st_rf, _, rf_html = client.get(f"/projects/{pid}/request/feature")
@@ -158,7 +158,7 @@ class TestEndToEnd(unittest.TestCase):
                 f"--{boundary}\r\nContent-Disposition: form-data; name=\"title\"\r\n\r\nExport PDF summary\r\n".encode(),
                 f"--{boundary}\r\nContent-Disposition: form-data; name=\"need\"\r\n\r\nBoard pack PDF.\r\n".encode(),
                 f"--{boundary}\r\nContent-Disposition: form-data; name=\"done_looks_like\"\r\n\r\nDownload button works.\r\n".encode(),
-                f"--{boundary}\r\nContent-Disposition: form-data; name=\"product_area\"\r\n\r\nsignalfarming-costs\r\n".encode(),
+                f"--{boundary}\r\nContent-Disposition: form-data; name=\"product_area\"\r\n\r\nbrightwater-costs\r\n".encode(),
                 (
                     f"--{boundary}\r\nContent-Disposition: form-data; name=\"images\"; filename=\"sketch.png\"\r\n"
                     f"Content-Type: image/png\r\n\r\n"
@@ -177,7 +177,7 @@ class TestEndToEnd(unittest.TestCase):
             self.assertIn("Export PDF summary", sub_html.decode("utf-8"))
 
             # Verify PNG metadata stripped in committed attachment
-            committed_img = app.ctx.data_dir / "demo_repos" / "signalfarming-costs" / "requests" / "REQ-0001-export-pdf-summary" / "1.png"
+            committed_img = app.ctx.data_dir / "demo_repos" / "brightwater-costs" / "requests" / "REQ-0001-export-pdf-summary" / "1.png"
             self.assertTrue(committed_img.is_file())
             self.assertNotIn(b"GPS=PRIVATE", committed_img.read_bytes())
 
@@ -194,7 +194,7 @@ class TestEndToEnd(unittest.TestCase):
                 str(app.ctx.data_dir / "demo_repos"),
                 sign_in_mode="C",
             )
-            c_pid = app.ctx.store.upsert_project(host_id, "researchTrail", "rt-mode-c")
+            c_pid = app.ctx.store.upsert_project(host_id, "fieldNotes", "rt-mode-c")
             app.ctx.sync_worker.sync_project(c_pid, force=True)
             app.ctx.config.mark_setup_complete()
             c_client = TestClient(app)

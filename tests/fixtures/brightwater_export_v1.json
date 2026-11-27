@@ -2,49 +2,49 @@
   "schema_version": "1.0",
   "engine_version": "0.1.30",
   "kind": "workspace",
-  "name": "SignalFarming",
+  "name": "Brightwater",
   "commit": "8c30feb",
   "generated_at": "2026-11-26T09:00:00Z",
   "repos": [
-    "researchTrail",
+    "fieldNotes",
     "llm-gateway",
-    "signalfarming-costs"
+    "brightwater-costs"
   ],
   "people": [
     {
-      "name": "Hemanth Karuturi",
+      "name": "Maya Chen",
       "role": "Owner and sole developer",
-      "contact": "karuturihemanth@gmail.com",
+      "contact": "maya@brightwater.example",
       "aliases": [
-        "karuturihemanth@gmail.com",
-        "Hemanthkaruturi",
-        "Hemanth Karuturi"
+        "maya@brightwater.example",
+        "mayachen",
+        "Maya Chen"
       ]
     },
     {
-      "name": "Amit Singh",
+      "name": "Jordan Reyes",
       "role": "Leadership reviewer",
-      "contact": "amit@signalfarming.example",
+      "contact": "jordan@brightwater.example",
       "aliases": [
-        "amit@signalfarming.example",
-        "amitsingh",
-        "Amit Singh"
+        "jordan@brightwater.example",
+        "jordanreyes",
+        "Jordan Reyes"
       ]
     }
   ],
   "items": [
     {
-      "id": "signalfarming-costs/003-excel-export",
+      "id": "brightwater-costs/003-excel-export",
       "kind": "feature",
-      "repo": "signalfarming-costs",
+      "repo": "brightwater-costs",
       "title": "Excel export",
       "rfc": "RFC-0012",
       "stage": "build",
       "state": "building — tasks 9/10",
       "state_plain": "Being built: 9 of 10 steps done",
       "legacy": false,
-      "owner": "Hemanth Karuturi",
-      "requested_by": "Hemanth Karuturi",
+      "owner": "Maya Chen",
+      "requested_by": "Maya Chen",
       "last_activity": "2026-11-25T14:12:00+05:30",
       "progress": {
         "done": 9,
@@ -53,7 +53,7 @@
       },
       "waiting_on": [
         {
-          "person": "Hemanth Karuturi",
+          "person": "Maya Chen",
           "task": "T902",
           "what": "Run the manual tests in spec section 8 (T004 browser look, T006 E18/E19, T902)",
           "inferred": false
@@ -73,11 +73,11 @@
           "approval": "approved",
           "approvers": [],
           "signers": [
-            "karuturihemanth@gmail.com"
+            "maya@brightwater.example"
           ],
           "signed": [
             {
-              "who": "karuturihemanth@gmail.com",
+              "who": "maya@brightwater.example",
               "when": "2026-11-24T10:00:00Z"
             }
           ],
@@ -92,7 +92,7 @@
         {
           "hash": "16139f7",
           "at": "2026-11-25T13:40:00+05:30",
-          "author": "Hemanthkaruturi",
+          "author": "mayachen",
           "subject": "spec 003: add Excel export endpoint and workbook builder"
         }
       ],
@@ -100,17 +100,17 @@
       "source_ref": "main"
     },
     {
-      "id": "researchTrail/038-named-decision-maker-contacts",
+      "id": "fieldNotes/038-named-decision-maker-contacts",
       "kind": "feature",
-      "repo": "researchTrail",
+      "repo": "fieldNotes",
       "title": "Named decision-maker contacts",
       "rfc": "RFC-0011",
       "stage": "build",
       "state": "building — tasks 22/24",
       "state_plain": "Being built: 22 of 24 steps done",
       "legacy": false,
-      "owner": "Hemanth Karuturi",
-      "requested_by": "Amit Singh",
+      "owner": "Maya Chen",
+      "requested_by": "Jordan Reyes",
       "last_activity": "2026-11-08T11:30:00+05:30",
       "progress": {
         "done": 22,
@@ -119,7 +119,7 @@
       },
       "waiting_on": [
         {
-          "person": "Hemanth Karuturi",
+          "person": "Maya Chen",
           "task": "T013",
           "what": "Owner go-live (T013, T020)",
           "inferred": true
@@ -139,11 +139,11 @@
           "approval": "approved",
           "approvers": [],
           "signers": [
-            "karuturihemanth@gmail.com"
+            "maya@brightwater.example"
           ],
           "signed": [
             {
-              "who": "karuturihemanth@gmail.com",
+              "who": "maya@brightwater.example",
               "when": "2026-11-01T09:00:00Z"
             }
           ],
@@ -158,14 +158,14 @@
         {
           "hash": "9a8b7c6",
           "at": "2026-11-08T11:00:00+05:30",
-          "author": "Hemanthkaruturi",
+          "author": "mayachen",
           "subject": "spec 038: wire decision maker contact lookup"
         }
       ],
       "changes": [
         {
           "at": "2026-11-07T16:20:00+05:30",
-          "who": "Hemanth Karuturi",
+          "who": "Maya Chen",
           "via": "claude-code",
           "summary": "Added pagination fallback for missing LinkedIn handle"
         }
@@ -173,24 +173,24 @@
       "source_ref": "main"
     },
     {
-      "id": "researchTrail/bugs/011-discovery-price-stale",
+      "id": "fieldNotes/bugs/011-discovery-price-stale",
       "kind": "bug",
-      "repo": "researchTrail",
+      "repo": "fieldNotes",
       "title": "Discovery price stale",
       "stage": "fixed",
       "state": "fixed (design-flaw)",
       "state_plain": "Fixed, waiting to be checked",
       "severity": "medium",
       "legacy": false,
-      "owner": "Hemanth Karuturi",
-      "reported_by": "Amit Singh",
-      "fixed_by": "Hemanth Karuturi",
+      "owner": "Maya Chen",
+      "reported_by": "Jordan Reyes",
+      "fixed_by": "Maya Chen",
       "last_activity": "2026-11-24T18:00:00+05:30",
       "expected": "Discovery price refreshes within 15 minutes of upstream quote update.",
       "actual": "Cached discovery price remained stale for 24 hours after upstream update.",
       "waiting_on": [
         {
-          "person": "Amit Singh",
+          "person": "Jordan Reyes",
           "task": "BUG-011",
           "what": "Verify fix, then set status: closed",
           "inferred": true
@@ -202,17 +202,17 @@
       "source_ref": "main"
     },
     {
-      "id": "researchTrail/002-llm-gateway-client",
+      "id": "fieldNotes/002-llm-gateway-client",
       "kind": "feature",
-      "repo": "researchTrail",
+      "repo": "fieldNotes",
       "title": "LLM gateway client",
       "rfc": "RFC-0009",
       "stage": "spec",
       "state": "spec — draft",
       "state_plain": "Being planned (spec)",
       "legacy": false,
-      "owner": "Hemanth Karuturi",
-      "requested_by": "Hemanth Karuturi",
+      "owner": "Maya Chen",
+      "requested_by": "Maya Chen",
       "last_activity": "2026-11-24T12:00:00Z",
       "summary": "Unify gateway client calls with retry and circuit breaker.",
       "done_means": "All workers call the shared client with deterministic timeout handling.",
@@ -224,12 +224,12 @@
           "path": "specs/002-llm-gateway-client/spec.md",
           "approval": "draft",
           "approvers": [
-            "Hemanth Karuturi"
+            "Maya Chen"
           ],
           "signers": [],
           "signed": [],
           "still_needed": [
-            "Hemanth Karuturi"
+            "Maya Chen"
           ],
           "can_approve": true,
           "preflight_reason": "",
@@ -244,10 +244,10 @@
   ],
   "approvals_waiting": [
     {
-      "document": "researchTrail/specs/002-llm-gateway-client/spec.md",
+      "document": "fieldNotes/specs/002-llm-gateway-client/spec.md",
       "state": "draft",
       "needs": [
-        "Hemanth Karuturi"
+        "Maya Chen"
       ]
     }
   ],
@@ -256,14 +256,14 @@
       "at": "2026-11-25T13:58:16Z",
       "type": "requested",
       "item": "RFC-0012",
-      "who": "Hemanth Karuturi",
+      "who": "Maya Chen",
       "source": "ledger"
     },
     {
       "at": "2026-11-25T14:12:00+05:30",
       "type": "note",
-      "item": "signalfarming-costs/003-excel-export",
-      "who": "Hemanth Karuturi",
+      "item": "brightwater-costs/003-excel-export",
+      "who": "Maya Chen",
       "source": "note"
     }
   ],
@@ -286,7 +286,7 @@
     "unreadable": []
   },
   "sub_repo_groundwork": {
-    "researchTrail": {
+    "fieldNotes": {
       "stage": "practicing",
       "stage_number": 5,
       "found": [
@@ -312,7 +312,7 @@
       "next_steps": [],
       "unreadable": []
     },
-    "signalfarming-costs": {
+    "brightwater-costs": {
       "stage": "practicing",
       "stage_number": 5,
       "found": [

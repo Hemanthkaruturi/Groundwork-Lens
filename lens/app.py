@@ -198,14 +198,14 @@ def create_app(data_dir: Path | str | None = None, start_worker: bool = False) -
         ctx.store.create_session(
             session_id=sid,
             host_id=0,
-            user_login="amitsingh",
-            user_name="Amit Singh",
-            verified_emails=["amit@signalfarming.example"],
+            user_login="jordanreyes",
+            user_name="Jordan Reyes",
+            verified_emails=["jordan@brightwater.example"],
             sign_in_mode="A",
             is_admin=True,
             is_demo=True,
         )
-        ctx.store.follow_project("0:amitsingh", pid)
+        ctx.store.follow_project("0:jordanreyes", pid)
         resp = app.redirect(f"/projects/{pid}")
         resp.set_cookie("lens_sid", sid, httponly=True, samesite="Lax")
         return resp
@@ -224,26 +224,26 @@ def create_app(data_dir: Path | str | None = None, start_worker: bool = False) -
             ctx.store.create_session(
                 session_id=sid,
                 host_id=0,
-                user_login="Hemanthkaruturi",
-                user_name="Hemanth Karuturi",
-                verified_emails=["karuturihemanth@gmail.com"],
+                user_login="mayachen",
+                user_name="Maya Chen",
+                verified_emails=["maya@brightwater.example"],
                 sign_in_mode="A",
                 is_admin=True,
                 is_demo=True,
             )
-            ctx.store.follow_project("0:Hemanthkaruturi", pid)
+            ctx.store.follow_project("0:mayachen", pid)
         else:
             ctx.store.create_session(
                 session_id=sid,
                 host_id=0,
-                user_login="amitsingh",
-                user_name="Amit Singh",
-                verified_emails=["amit@signalfarming.example"],
+                user_login="jordanreyes",
+                user_name="Jordan Reyes",
+                verified_emails=["jordan@brightwater.example"],
                 sign_in_mode="A",
                 is_admin=True,
                 is_demo=True,
             )
-            ctx.store.follow_project("0:amitsingh", pid)
+            ctx.store.follow_project("0:jordanreyes", pid)
         resp = app.redirect(f"/projects/{pid}")
         resp.set_cookie("lens_sid", sid, httponly=True, samesite="Lax")
         return resp
@@ -704,7 +704,10 @@ def create_app(data_dir: Path | str | None = None, start_worker: bool = False) -
             return err_resp or app.redirect("/")
 
         gw_stage = vm["groundwork"].get("stage", "not-started")
-        if gw_stage == "not-started" and not vm["all_items"] and not proj.get("removed_groundwork_at"):
+        # Only conclude "not set up" once Lens has actually read the repo. A
+        # failed or pending sync leaves no snapshot, which looks the same.
+        read_ok = proj.get("last_sync_status") in ("ok", "archived")
+        if read_ok and gw_stage == "not-started" and not vm["all_items"] and not proj.get("removed_groundwork_at"):
             return app.redirect(f"/projects/{pid}/not-set-up")
 
         err, info = _flash_from_query(req)
@@ -751,7 +754,7 @@ def create_app(data_dir: Path | str | None = None, start_worker: bool = False) -
         sess, redir = _require_session(req)
         if redir:
             return redir
-        ok, msg = ctx.sync_worker.trigger_manual_refresh(pid)
+        ok, msg = ctx.sync_worker.trigger_manual_refresh(pid, user_token=sess.get("user_token", "") if sess else "")
         if ok:
             return _redirect_with(f"/projects/{pid}", info="Project refreshed.")
         return _redirect_with(f"/projects/{pid}", err=msg)

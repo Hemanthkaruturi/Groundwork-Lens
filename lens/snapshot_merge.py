@@ -67,7 +67,7 @@ def user_aliases_set(user: dict[str, Any] | None, people: list[dict[str, Any]]) 
 
 
 def format_change_actor(change: dict[str, Any]) -> str:
-    """Format agent-assisted work transparently (E8): 'Hemanth, using Claude Code'."""
+    """Format agent-assisted work transparently (E8): 'Maya, using Claude Code'."""
     who = str(change.get("who") or "Owner")
     via = str(change.get("via") or "").strip()
     if not via:

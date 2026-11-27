@@ -25,17 +25,17 @@ REPO_ROOT = Path(__file__).resolve().parent.parent
 
 class TestEngineContractAndFeatures(unittest.TestCase):
     def test_m0_fixture_matches_schema_contract(self) -> None:
-        fixture = json.loads((REPO_ROOT / "tests" / "fixtures" / "signalfarming_export_v1.json").read_text("utf-8"))
+        fixture = json.loads((REPO_ROOT / "tests" / "fixtures" / "brightwater_export_v1.json").read_text("utf-8"))
         self.assertEqual(fixture["schema_version"], SCHEMA_VERSION)
         self.assertEqual(fixture["engine_version"], ENGINE_VERSION)
         self.assertEqual(fixture["kind"], "workspace")
         ids = {it["id"]: it for it in fixture["items"]}
-        self.assertIn("signalfarming-costs/003-excel-export", ids)
-        self.assertIn("researchTrail/038-named-decision-maker-contacts", ids)
-        self.assertIn("researchTrail/bugs/011-discovery-price-stale", ids)
-        self.assertEqual(ids["signalfarming-costs/003-excel-export"]["waiting_on"][0]["person"], "Hemanth Karuturi")
-        self.assertFalse(ids["signalfarming-costs/003-excel-export"]["waiting_on"][0]["inferred"])
-        self.assertTrue(ids["researchTrail/038-named-decision-maker-contacts"]["waiting_on"][0]["inferred"])
+        self.assertIn("brightwater-costs/003-excel-export", ids)
+        self.assertIn("fieldNotes/038-named-decision-maker-contacts", ids)
+        self.assertIn("fieldNotes/bugs/011-discovery-price-stale", ids)
+        self.assertEqual(ids["brightwater-costs/003-excel-export"]["waiting_on"][0]["person"], "Maya Chen")
+        self.assertFalse(ids["brightwater-costs/003-excel-export"]["waiting_on"][0]["inferred"])
+        self.assertTrue(ids["fieldNotes/038-named-decision-maker-contacts"]["waiting_on"][0]["inferred"])
 
     def test_export_paths_cli(self) -> None:
         proc = subprocess.run(
@@ -149,7 +149,7 @@ class TestEngineContractAndFeatures(unittest.TestCase):
                 "feature",
                 {
                     "title": "Weekly digest",
-                    "requested_by": "Amit Singh",
+                    "requested_by": "Jordan Reyes",
                     "need": "Leaders want a weekly summary.",
                     "done_looks_like": "Delivered on Mondays.",
                     "product_area": "req",
@@ -162,9 +162,9 @@ class TestEngineContractAndFeatures(unittest.TestCase):
             self.assertTrue((repo / "requests" / "REQ-0001-weekly-digest" / "1.png").is_file())
 
             # Append questions as agent would
-            raw = req_file.read_text("utf-8") + "\n## Questions for Amit Singh\n\n1. **Q1** — Which day?\n   - Monday\n   - Friday\n"
+            raw = req_file.read_text("utf-8") + "\n## Questions for Jordan Reyes\n\n1. **Q1** — Which day?\n   - Monday\n   - Friday\n"
             req_file.write_text(raw, encoding="utf-8")
-            ans = answer_request(repo, "REQ-0001", {"Q1": "Monday"}, answered_by="Amit Singh")
+            ans = answer_request(repo, "REQ-0001", {"Q1": "Monday"}, answered_by="Jordan Reyes")
             self.assertEqual(ans["status"], "interviewing")
             self.assertIn("**Answer:** Monday", req_file.read_text("utf-8"))
 
@@ -174,24 +174,24 @@ class TestEngineContractAndFeatures(unittest.TestCase):
             (repo / "DECISIONS").mkdir()
             rfc = repo / "DECISIONS" / "RFC-0001-lens.md"
             rfc.write_text(
-                "---\nid: RFC-0001\ntitle: Lens\nstatus: in-review\nowner: Hemanth Karuturi\napprovers: [Amit Singh]\n---\n\n## 1. Summary\nSummary.\n",
+                "---\nid: RFC-0001\ntitle: Lens\nstatus: in-review\nowner: Maya Chen\napprovers: [Jordan Reyes]\n---\n\n## 1. Summary\nSummary.\n",
                 encoding="utf-8",
             )
             commit_all(repo, "add rfc")
 
             h = doc_hash(rfc)
             # Terminal approval (no via)
-            res_term = approve_document(repo, "DECISIONS/RFC-0001-lens.md", who="amit@example.com", expect_hash=h)
+            res_term = approve_document(repo, "DECISIONS/RFC-0001-lens.md", who="jordan@example.com", expect_hash=h)
             self.assertTrue(res_term["ok"])
             self.assertNotIn("via", res_term["signers"][0])
 
             # Reset and approve via Lens
             (repo / ".groundwork" / "approvals.json").write_text("{}", encoding="utf-8")
             rfc.write_text(
-                "---\nid: RFC-0001\ntitle: Lens\nstatus: in-review\nowner: Hemanth Karuturi\napprovers: [Amit Singh]\n---\n\n## 1. Summary\nSummary.\n",
+                "---\nid: RFC-0001\ntitle: Lens\nstatus: in-review\nowner: Maya Chen\napprovers: [Jordan Reyes]\n---\n\n## 1. Summary\nSummary.\n",
                 encoding="utf-8",
             )
-            res_lens = approve_document(repo, "DECISIONS/RFC-0001-lens.md", who="amit@example.com", via="lens", expect_hash=h)
+            res_lens = approve_document(repo, "DECISIONS/RFC-0001-lens.md", who="jordan@example.com", via="lens", expect_hash=h)
             self.assertTrue(res_lens["ok"])
             self.assertEqual(res_lens["signers"][0]["via"], "lens")
             self.assertEqual(res_lens["body_hash"], res_term["body_hash"])
@@ -201,7 +201,7 @@ class TestEngineContractAndFeatures(unittest.TestCase):
             spec = repo / "specs" / "001-lens" / "spec.md"
             spec.write_text("---\ntitle: Lens Spec\nrfc: RFC-0001\nstatus: in-review\n---\n\n## 1. Summary\nInitial.\n", encoding="utf-8")
             commit_all(repo, "add spec")
-            approve_document(repo, "specs/001-lens/spec.md", who="karuturihemanth@gmail.com")
+            approve_document(repo, "specs/001-lens/spec.md", who="maya@brightwater.example")
             commit_all(repo, "approve spec")
 
             spec.write_text("---\ntitle: Lens Spec\nrfc: RFC-0001\nstatus: approved\n---\n\n## 1. Summary\nInitial.\nExtra line.\n", encoding="utf-8")
@@ -211,12 +211,12 @@ class TestEngineContractAndFeatures(unittest.TestCase):
             self.assertEqual(ev["changes_since_approval"][0]["section"], "1. Summary")
             self.assertIn("Extra line.", ev["changes_since_approval"][0]["added"])
 
-            refused = approve_document(repo, "specs/001-lens/spec.md", who="karuturihemanth@gmail.com")
+            refused = approve_document(repo, "specs/001-lens/spec.md", who="maya@brightwater.example")
             self.assertFalse(refused["ok"])
             accepted = approve_document(
                 repo,
                 "specs/001-lens/spec.md",
-                who="karuturihemanth@gmail.com",
+                who="maya@brightwater.example",
                 via="lens",
                 change_note="Clarified summary",
             )

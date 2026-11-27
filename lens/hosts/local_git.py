@@ -146,7 +146,7 @@ class LocalGitAdapter(HostAdapter):
             empty=bool(meta.get("empty", is_empty)),
             private=False,
             can_push=True,
-            maintainers=list(meta.get("maintainers", ["Hemanth Karuturi"])),
+            maintainers=list(meta.get("maintainers", ["Maya Chen"])),
         )
 
     def check_repo_access(self, repo_full_name: str, user_login: str, user_token: str = "") -> bool:

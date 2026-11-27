@@ -49,8 +49,8 @@ class TestHostAdapters(unittest.TestCase):
             # exchange_manifest_code
             _fake_resp(201, {"id": 99, "slug": "acme-lens", "client_id": "cid", "client_secret": "csec", "webhook_secret": "wsec", "pem": pem}),
             # get_user_profile (/user, /user/emails)
-            _fake_resp(200, {"login": "amitsingh", "name": "Amit Singh", "email": ""}),
-            _fake_resp(200, [{"email": "amit@acme.com", "verified": True}]),
+            _fake_resp(200, {"login": "jordanreyes", "name": "Jordan Reyes", "email": ""}),
+            _fake_resp(200, [{"email": "jordan@acme.com", "verified": True}]),
             # list_open_prs -> get_installation_token (/repos/.../installation, /app/installations/.../access_tokens), pulls, files
             _fake_resp(200, {"id": 500}),
             _fake_resp(201, {"token": "ghs_install_tok"}),
@@ -66,8 +66,8 @@ class TestHostAdapters(unittest.TestCase):
         gh.credentials = creds
 
         prof = gh.get_user_profile("user-tok")
-        self.assertEqual(prof.login, "amitsingh")
-        self.assertEqual(prof.verified_emails, ["amit@acme.com"])
+        self.assertEqual(prof.login, "jordanreyes")
+        self.assertEqual(prof.verified_emails, ["jordan@acme.com"])
 
         prs = gh.list_open_prs("org/repo")
         self.assertEqual(len(prs), 1)
@@ -130,8 +130,8 @@ class TestHostAdapters(unittest.TestCase):
         exp_soon = (datetime.now(timezone.utc) + timedelta(days=5)).strftime("%Y-%m-%d")
         sess.post.return_value = _fake_resp(200, {"access_token": "gl-oauth-tok"})
         sess.request.side_effect = [
-            _fake_resp(200, {"username": "amitsingh", "name": "Amit Singh", "email": "amit@acme.com"}),
-            _fake_resp(200, [{"email": "amit@acme.com", "confirmed_at": "2026-01-01T00:00:00Z"}]),
+            _fake_resp(200, {"username": "jordanreyes", "name": "Jordan Reyes", "email": "jordan@acme.com"}),
+            _fake_resp(200, [{"email": "jordan@acme.com", "confirmed_at": "2026-01-01T00:00:00Z"}]),
             _fake_resp(200, [{"iid": 7, "title": "Update spec", "source_branch": "spec-7", "target_branch": "main", "sha": "def456", "web_url": "https://gitlab.com/g/p/-/merge_requests/7"}]),
             _fake_resp(200, {"changes": [{"new_path": "specs/007/spec.md"}]}),
             _fake_resp(200, {"scopes": ["read_api", "read_repository", "api"], "expires_at": exp_soon}),
@@ -146,7 +146,7 @@ class TestHostAdapters(unittest.TestCase):
         tok = gl.exchange_oauth_code("code-1", "https://lens.example.com")
         self.assertEqual(tok, "gl-oauth-tok")
         prof = gl.get_user_profile(tok, is_oauth=True)
-        self.assertEqual(prof.login, "amitsingh")
+        self.assertEqual(prof.login, "jordanreyes")
 
         mrs = gl.list_open_prs("g/p")
         self.assertEqual(mrs[0].number, 7)

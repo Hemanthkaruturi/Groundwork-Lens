@@ -23,9 +23,9 @@ def git_run(cwd: Path, args: list[str], commit_date: str = "2026-11-20T12:00:00Z
             "-c",
             "core.hooksPath=/dev/null",
             "-c",
-            "user.name=Hemanth Karuturi",
+            "user.name=Maya Chen",
             "-c",
-            "user.email=karuturihemanth@gmail.com",
+            "user.email=maya@brightwater.example",
             *args,
         ],
         cwd=str(cwd),
@@ -60,14 +60,14 @@ def create_minimal_gw_repo(
     (path / ".groundwork" / "config.json").write_text(json.dumps({"name": name, "kind": "repo"}), encoding="utf-8")
     (path / ".groundwork" / "approvals.json").write_text("{}", encoding="utf-8")
     (path / ".groundwork" / "ledger.jsonl").write_text(
-        f'{{"at":"2026-11-10T09:00:00Z","type":"created","item":"{name}","who":"Hemanth Karuturi"}}\n',
+        f'{{"at":"2026-11-10T09:00:00Z","type":"created","item":"{name}","who":"Maya Chen"}}\n',
         encoding="utf-8",
     )
     people_tbl = (
         f"# {name}\n\n## Who works on what\n\n"
         "| Name | Role | Contact |\n| --- | --- | --- |\n"
-        "| Hemanth Karuturi | Owner | karuturihemanth@gmail.com, Hemanthkaruturi |\n"
-        "| Amit Singh | Reviewer | amit@example.com, amitsingh |\n"
+        "| Maya Chen | Owner | maya@brightwater.example, mayachen |\n"
+        "| Jordan Reyes | Reviewer | jordan@example.com, jordanreyes |\n"
     )
     if extra_people:
         people_tbl += extra_people

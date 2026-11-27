@@ -67,7 +67,7 @@ def _parse_changes_md(changes_text: str, people: list[dict[str, Any]]) -> list[d
         s = raw.strip()
         if not s or s.startswith("#") or s.startswith("|---"):
             continue
-        # Match bullet format: - 2026-11-07 by Hemanth (via claude-code): summary
+        # Match bullet format: - 2026-11-07 by Maya (via claude-code): summary
         bm = re.match(
             r"^[-*]\s+(\d{4}-\d{2}-\d{2}(?:T[0-9:+-]+Z?)?)\s+(?:by\s+([^(:]+?))?(?:\s*\(via\s+([^)]+)\))?\s*[:—–-]\s*(.+)$",
             s,

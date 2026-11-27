@@ -140,15 +140,15 @@ class TestEdgeCasesE1ToE22AndN1ToN9(unittest.TestCase):
             s_act = repo / "specs" / "003-active"
             s_act.mkdir(parents=True)
             (s_act / "spec.md").write_text(
-                "---\ntitle: Active work\nrfc: (none)\nbaseline: true\nowner: karuturihemanth@gmail.com\n---\n\n## 1. Summary\nActive.\n"
+                "---\ntitle: Active work\nrfc: (none)\nbaseline: true\nowner: maya@brightwater.example\n---\n\n## 1. Summary\nActive.\n"
             )
             # Clear baseline on 003 via RFC so it's non-legacy
             (repo / "DECISIONS" / "RFC-0003-act.md").write_text("---\nid: RFC-0003\ntitle: Active\nstatus: approved\n---\n\n## 1. Summary\nAct.\n")
             (s_act / "spec.md").write_text(
-                "---\ntitle: Active work\nrfc: RFC-0003\nowner: karuturihemanth@gmail.com\n---\n\n## 1. Summary\nActive.\n"
+                "---\ntitle: Active work\nrfc: RFC-0003\nowner: maya@brightwater.example\n---\n\n## 1. Summary\nActive.\n"
             )
-            (s_act / "tasks.md").write_text("- [x] **T001** — Done\n- [ ] **T901** — Manual check\n  - **Waiting on:** Hemanthkaruturi (manual check)\n")
-            (s_act / "changes.md").write_text("- 2026-11-15 by Hemanth Karuturi (via claude-code): Tweaked retry\n")
+            (s_act / "tasks.md").write_text("- [x] **T001** — Done\n- [ ] **T901** — Manual check\n  - **Waiting on:** mayachen (manual check)\n")
+            (s_act / "changes.md").write_text("- 2026-11-15 by Maya Chen (via claude-code): Tweaked retry\n")
             (s_act / "log.md").write_text("- 2026-11-16T10:00:00Z: Deployed to staging\n")
             commit_all(repo, "spec 003: commit work", date="2026-11-16T10:00:00Z")
 
@@ -157,10 +157,10 @@ class TestEdgeCasesE1ToE22AndN1ToN9(unittest.TestCase):
             self.assertTrue(by_id["002-old"]["legacy"])
             self.assertFalse(by_id["003-active"]["legacy"])
             # E7 alias resolved
-            self.assertEqual(by_id["003-active"]["owner"], "Hemanth Karuturi")
-            self.assertEqual(by_id["003-active"]["waiting_on"][0]["person"], "Hemanth Karuturi")
+            self.assertEqual(by_id["003-active"]["owner"], "Maya Chen")
+            self.assertEqual(by_id["003-active"]["waiting_on"][0]["person"], "Maya Chen")
             # E8 agent attribution
-            self.assertEqual(format_change_actor(by_id["003-active"]["changes"][0]), "Hemanth Karuturi, using Claude Code")
+            self.assertEqual(format_change_actor(by_id["003-active"]["changes"][0]), "Maya Chen, using Claude Code")
             # E6 merged timeline sources
             sources = {e["source"] for e in snap["events"]}
             self.assertTrue({"ledger", "change-log", "note", "git"}.issubset(sources))
@@ -178,7 +178,7 @@ class TestEdgeCasesE1ToE22AndN1ToN9(unittest.TestCase):
             (ws / ".groundwork" / "config.json").write_text('{"name":"ws","kind":"workspace"}')
             (ws / "DECISIONS").mkdir()
             ws_rfc = ws / "DECISIONS" / "RFC-0001-ws.md"
-            ws_rfc.write_text("---\nid: RFC-0001\ntitle: WS RFC\nstatus: in-review\napprovers: [Amit Singh]\n---\n\n## 1. Summary\nWS.\n")
+            ws_rfc.write_text("---\nid: RFC-0001\ntitle: WS RFC\nstatus: in-review\napprovers: [Jordan Reyes]\n---\n\n## 1. Summary\nWS.\n")
             (ws / ".gitmodules").write_text('[submodule "sub"]\n\tpath = sub\n\turl = ../sub\n')
             commit_all(ws, "init ws")
 
@@ -187,27 +187,27 @@ class TestEdgeCasesE1ToE22AndN1ToN9(unittest.TestCase):
             sub_rfc = sub / "DECISIONS" / "RFC-0002-sub.md"
             sub_rfc.write_text(
                 "---\nid: RFC-0002\ntitle: Sub RFC\nstatus: in-review\nworkspace_rfc: RFC-0001\n"
-                "owner: Hemanth Karuturi\napprovers: [Amit Singh]\n---\n\n## 1. Summary\nSub.\n"
+                "owner: Maya Chen\napprovers: [Jordan Reyes]\n---\n\n## 1. Summary\nSub.\n"
             )
             commit_all(sub, "init sub")
 
             # E19: approving sub_rfc before ws_rfc must fail with blocking_rfc
-            r_e19 = approve_document(sub, "DECISIONS/RFC-0002-sub.md", who="amit@example.com", workspace_repo=ws)
+            r_e19 = approve_document(sub, "DECISIONS/RFC-0002-sub.md", who="jordan@example.com", workspace_repo=ws)
             self.assertFalse(r_e19["ok"])
             self.assertEqual(r_e19["blocking_rfc"], "RFC-0001")
 
             # E18: non-named approver refused
-            r_e18 = approve_document(ws, "DECISIONS/RFC-0001-ws.md", who="karuturihemanth@gmail.com")
+            r_e18 = approve_document(ws, "DECISIONS/RFC-0001-ws.md", who="maya@brightwater.example")
             self.assertFalse(r_e18["ok"])
 
             # E15: stale expect_hash refused
-            r_e15 = approve_document(ws, "DECISIONS/RFC-0001-ws.md", who="amit@example.com", expect_hash="deadbeef")
+            r_e15 = approve_document(ws, "DECISIONS/RFC-0001-ws.md", who="jordan@example.com", expect_hash="deadbeef")
             self.assertFalse(r_e15["ok"])
             self.assertIn("changed since you opened it", r_e15["error"])
 
             # E20 + E17: Read-only user on protected branch submits request & approves -> Lens identity + trailer + fallback PR
             adapter = LocalGitAdapter(host_root)
-            adapter.set_user_read_only("ws", "amitsingh", True)
+            adapter.set_user_read_only("ws", "jordanreyes", True)
             adapter.set_branch_protected("ws", "main", True)
 
             store = LensStore(Path(td) / "data")
@@ -218,10 +218,10 @@ class TestEdgeCasesE1ToE22AndN1ToN9(unittest.TestCase):
             worker.sync_project(pid, force=True)
             writer = LensWriter(store, worker)
 
-            amit = {
-                "user_login": "amitsingh",
-                "user_name": "Amit Singh",
-                "verified_emails": ["amit@example.com"],
+            jordan = {
+                "user_login": "jordanreyes",
+                "user_name": "Jordan Reyes",
+                "verified_emails": ["jordan@example.com"],
                 "user_token": "",
                 "sign_in_mode": "A",
             }
@@ -229,7 +229,7 @@ class TestEdgeCasesE1ToE22AndN1ToN9(unittest.TestCase):
             with self.assertRaises(WriteError):
                 writer.submit_request(
                     pid,
-                    amit,
+                    jordan,
                     "feature",
                     {"title": "Too many", "need": "N", "done_looks_like": "D", "product_area": "Not sure"},
                     raw_images=[(f"{i}.png", make_png_with_text_chunk()) for i in range(MAX_IMAGES_PER_REQUEST + 1)],
@@ -238,7 +238,7 @@ class TestEdgeCasesE1ToE22AndN1ToN9(unittest.TestCase):
             # E20 + E17 request submission on protected workspace branch
             req_res = writer.submit_request(
                 pid,
-                amit,
+                jordan,
                 "bug",
                 {
                     "title": "Not sure bug",
@@ -256,14 +256,14 @@ class TestEdgeCasesE1ToE22AndN1ToN9(unittest.TestCase):
 
             # E20 + E17 approval on protected branch
             _, ws_body = split_front_matter(ws_rfc.read_text("utf-8"))
-            ap_res = writer.approve_document(pid, amit, "DECISIONS/RFC-0001-ws.md", "main", body_hash(ws_body))
+            ap_res = writer.approve_document(pid, jordan, "DECISIONS/RFC-0001-ws.md", "main", body_hash(ws_body))
             self.assertTrue(ap_res["ok"])
             self.assertFalse(ap_res["push"]["pushed"])
             self.assertEqual(ap_res["approve"]["signers"][0]["via"], "lens")
             # Commit message on fallback branch carries Approved-by trailer
             fb_branch = ap_res["push"]["branch"]
             log_msg = subprocess.run(["git", "log", "-1", "--format=%B", fb_branch], cwd=str(ws), capture_output=True, text=True).stdout
-            self.assertIn("Approved-by: Amit Singh <amit@example.com>", log_msg)
+            self.assertIn("Approved-by: Jordan Reyes <jordan@example.com>", log_msg)
 
             # E22: "Not sure" bug report stays in workspace while bug record lives in sub-repo with backlink
             (ws / "requests").mkdir(exist_ok=True)
@@ -280,8 +280,8 @@ class TestEdgeCasesE1ToE22AndN1ToN9(unittest.TestCase):
             adapter.set_branch_protected("sub", "main", False)
             sub_pid = store.upsert_project(hid, "sub", "sub")
             worker.sync_project(sub_pid, force=True)
-            r1 = writer.submit_request(sub_pid, amit, "feature", {"title": "First", "need": "N", "done_looks_like": "D", "product_area": "sub"})
-            r2 = writer.submit_request(sub_pid, amit, "feature", {"title": "Second", "need": "N", "done_looks_like": "D", "product_area": "sub"})
+            r1 = writer.submit_request(sub_pid, jordan, "feature", {"title": "First", "need": "N", "done_looks_like": "D", "product_area": "sub"})
+            r2 = writer.submit_request(sub_pid, jordan, "feature", {"title": "Second", "need": "N", "done_looks_like": "D", "product_area": "sub"})
             self.assertEqual(r1["request"]["id"], "REQ-0001")
             self.assertEqual(r2["request"]["id"], "REQ-0002")
 
