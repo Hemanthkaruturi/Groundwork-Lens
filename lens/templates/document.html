@@ -1,11 +1,8 @@
 {% extends "base.html" %}
 {% block title %}{{ doc.title }} — Document Review{% endblock %}
-{% block main_class %}container-narrow{% endblock %}
 {% block content %}
-<div class="row-between page-nav">
-  <a class="back-link" href="/projects/{{ project.id }}">&larr; {{ project.display_name }}</a>
-  <a class="btn btn-ghost btn-sm" href="{{ doc.web_url }}" target="_blank" rel="noopener noreferrer">Open on host</a>
-</div>
+<div class="detail">
+<div class="detail-main">
 
 <!-- 1. Summary bar -->
 <div class="card {% if doc.approval == 'stale' %}card-reapprove{% elif doc.approval == 'in-review' %}card-approval{% endif %}">
@@ -83,6 +80,7 @@
         <a class="btn btn-secondary" href="#doc-editor">Edit</a>
       {% endif %}
     {% endif %}
+    <a class="btn btn-ghost" href="{{ doc.web_url }}" target="_blank" rel="noopener noreferrer">Open on host</a>
   </div>
 </div>
 
@@ -105,37 +103,6 @@
       </div>
     </div>
   {% endfor %}
-</div>
-{% endif %}
-
-<!-- 3. Front matter facts box -->
-{% if facts %}
-<div class="card">
-  <h2 class="card-title">Facts</h2>
-  <table class="clean-table">
-    <tbody>
-      {% for fk, fv in facts %}
-      <tr>
-        <th>{{ fk }}</th>
-        <td>{{ fv }}</td>
-      </tr>
-      {% endfor %}
-    </tbody>
-  </table>
-</div>
-{% endif %}
-
-<!-- Table of Contents -->
-{% if toc %}
-<div class="card">
-  <h2 class="card-title">Contents</h2>
-  <ul class="toc">
-    {% for h in toc %}
-      <li class="toc-l{{ h.level }}">
-        <a href="#{{ h.slug }}">{{ h.text }}</a>
-      </li>
-    {% endfor %}
-  </ul>
 </div>
 {% endif %}
 
@@ -210,4 +177,38 @@
 </div>
 {% endif %}
 
+</div>
+
+<aside class="detail-rail">
+{% if toc %}
+<div class="card">
+  <h2 class="card-title">Contents</h2>
+  <ul class="toc">
+    {% for h in toc %}
+      <li class="toc-l{{ h.level }}">
+        <a href="#{{ h.slug }}">{{ h.text }}</a>
+      </li>
+    {% endfor %}
+  </ul>
+</div>
+{% endif %}
+
+{% if facts %}
+<div class="card">
+  <h2 class="card-title">Facts</h2>
+  <table class="clean-table">
+    <tbody>
+      {% for fk, fv in facts %}
+      <tr>
+        <th>{{ fk }}</th>
+        <td>{{ fv }}</td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% endif %}
+
+</aside>
+</div>
 {% endblock %}
