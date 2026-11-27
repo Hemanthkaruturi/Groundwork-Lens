@@ -1,16 +1,17 @@
 {% extends "base.html" %}
 {% block title %}{{ doc.title }} — Document Review{% endblock %}
+{% block main_class %}container-narrow{% endblock %}
 {% block content %}
-<div style="margin-bottom: 12px;" class="row-between">
-  <a class="meta-line" href="/projects/{{ project.id }}">&larr; Back to {{ project.display_name }}</a>
+<div class="row-between page-nav">
+  <a class="back-link" href="/projects/{{ project.id }}">&larr; {{ project.display_name }}</a>
   <a class="btn btn-ghost btn-sm" href="{{ doc.web_url }}" target="_blank" rel="noopener noreferrer">Open on host</a>
 </div>
 
 <!-- 1. Summary bar -->
-<div class="card {% if doc.approval == 'stale' %}card-reapprove{% elif doc.approval == 'in-review' %}card-waiting{% endif %}">
-  <div class="row-between">
+<div class="card {% if doc.approval == 'stale' %}card-reapprove{% elif doc.approval == 'in-review' %}card-approval{% endif %}">
+  <div class="card-head">
     <div>
-      <h1 class="page-title" style="margin-bottom: 2px;">{{ doc.title }}</h1>
+      <h1 class="page-title">{{ doc.title }}</h1>
       <div class="meta-line">
         {{ doc.type | upper }} · <span class="mono-id">{{ doc.path }}</span>
         {% if doc.author %} · Author: {{ doc.author }}{% endif %}
@@ -22,14 +23,14 @@
       {% elif doc.approval == 'stale' %}
         <span class="badge badge-reapprove">Changed after approval, needs re-approval</span>
       {% elif doc.approval == 'in-review' %}
-        <span class="badge badge-waiting">Ready for approval</span>
+        <span class="badge badge-approval">Ready for approval</span>
       {% else %}
         <span class="badge">Draft</span>
       {% endif %}
     </div>
   </div>
 
-  <div class="meta-line" style="margin-top: 8px;">
+  <div class="meta-line mt-md">
     {% if doc.signed %}
       Signed by: {{ doc.signed | map(attribute='who') | join(', ') }}.
     {% else %}
@@ -43,7 +44,7 @@
   </div>
 
   {% if not doc.can_approve and doc.preflight_reason %}
-    <div class="banner banner-waiting" style="margin-top: 10px; margin-bottom: 0;">
+    <div class="banner banner-waiting mt-md mb-0">
       Cannot approve yet: {{ doc.preflight_reason }}
       {% if doc.blocking_rfc %}
         — <a href="/projects/{{ project.id }}/item/{{ doc.blocking_rfc | urlencode }}">Approve {{ doc.blocking_rfc }} first</a>
@@ -52,7 +53,7 @@
   {% endif %}
 
   <!-- Actions: Approve, Edit, Send back -->
-  <div class="stack-row" style="margin-top: 14px;">
+  <div class="stack-row mt-md">
     {% if session.sign_in_mode == 'C' %}
       <span class="meta-line">Approving and editing are turned off in Mode C (no login).</span>
     {% else %}
@@ -67,12 +68,12 @@
             <input type="hidden" name="pr" value="{{ pr_number }}">
             <input type="hidden" name="expect_hash" value="{{ doc.body_hash }}">
             {% if doc.approval == 'stale' and doc.type == 'spec' %}
-              <input type="text" name="change_note" placeholder="What changed and why?" required style="margin-bottom: 8px;">
+              <input type="text" name="change_note" placeholder="What changed and why?" required class="mb-md">
             {% endif %}
             <button class="btn btn-primary" type="submit">Approve</button>
           </form>
         {% else %}
-          <button class="btn btn-primary" type="button" disabled style="opacity: 0.5; cursor: not-allowed;">Approve</button>
+          <button class="btn btn-primary" type="button" disabled>Approve</button>
         {% endif %}
       {% elif doc.approvers %}
         <span class="meta-line">Must be approved by: {{ doc.approvers | join(', ') }}.</span>
@@ -90,16 +91,18 @@
 <div class="card card-reapprove">
   <h2 class="card-title">What changed since the last approval</h2>
   {% for ch in doc.changes_since_approval %}
-    <div style="margin-top: 10px;">
+    <div class="diff-block">
       <strong>{{ ch.section }}</strong>
       {% if ch.note %}<div class="meta-line">{{ ch.note }}</div>{% endif %}
       <div class="meta-line">+{{ ch.added_count }} added / -{{ ch.removed_count }} removed</div>
+      <div class="diff-lines">
       {% for line in ch.added %}
-        <div class="mono-id" style="color: var(--done-text);">+ {{ line }}</div>
+        <span class="diff-add">+ {{ line }}</span>
       {% endfor %}
       {% for line in ch.removed %}
-        <div class="mono-id" style="color: var(--reapprove-text);">- {{ line }}</div>
+        <span class="diff-del">- {{ line }}</span>
       {% endfor %}
+      </div>
     </div>
   {% endfor %}
 </div>
@@ -126,9 +129,9 @@
 {% if toc %}
 <div class="card">
   <h2 class="card-title">Contents</h2>
-  <ul style="margin: 6px 0 0; padding-left: 18px;">
+  <ul class="toc">
     {% for h in toc %}
-      <li style="margin-left: {{ (h.level - 1) * 12 }}px;">
+      <li class="toc-l{{ h.level }}">
         <a href="#{{ h.slug }}">{{ h.text }}</a>
       </li>
     {% endfor %}
@@ -143,7 +146,7 @@
 
 <!-- Edit Panel (Author or Named Approvers only) -->
 {% if user_can_edit and session.sign_in_mode != 'C' %}
-<div id="doc-editor" class="card" style="margin-top: 16px;">
+<div id="doc-editor" class="card mt-md">
   <h2 class="card-title">Edit document body</h2>
   {% if doc.approval == 'approved' %}
     <div class="banner banner-waiting">
@@ -184,13 +187,13 @@
       {% endif %}
     </div>
   </form>
-  <div id="doc-live-preview-pane" class="md-body card hidden" style="margin-top: 12px;"></div>
+  <div id="doc-live-preview-pane" class="md-body card hidden mt-md"></div>
 </div>
 {% endif %}
 
 <!-- Send back form -->
 {% if session.sign_in_mode != 'C' and user_can_approve %}
-<div class="card" style="margin-top: 16px;">
+<div class="card mt-md">
   <h2 class="card-title">Send back to author</h2>
   <form method="post" action="/projects/{{ project.id }}/doc/send-back">
     <input type="hidden" name="_csrf" value="{{ csrf_token }}">
@@ -202,7 +205,7 @@
       <label class="field-label" for="sendback-note">What needs to change?</label>
       <textarea id="sendback-note" name="note" required placeholder="Write a clear note for the author"></textarea>
     </div>
-    <button class="btn btn-text" type="submit">Send back</button>
+    <button class="btn btn-secondary" type="submit">Send back</button>
   </form>
 </div>
 {% endif %}

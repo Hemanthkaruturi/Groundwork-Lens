@@ -1,13 +1,14 @@
 {% extends "base.html" %}
 {% block title %}Setup Wizard — GroundWork Lens{% endblock %}
+{% block main_class %}container-narrow{% endblock %}
 {% block content %}
 <h1 class="page-title">Set up GroundWork Lens</h1>
-<p class="meta-line" style="margin-bottom: 16px;">Connect GitHub or GitLab in a few minutes. All settings stay encrypted in <code>/data</code>.</p>
+<p class="page-lede mb-md">Connect GitHub or GitLab in a few minutes. All settings stay encrypted in <code>/data</code>.</p>
 
 {% if not setup_unlocked %}
 <div class="card">
   <h2 class="card-title">Enter one-time setup code</h2>
-  <p class="meta-line" style="margin-bottom: 12px;">
+  <p class="meta-line step-intro">
     Check your container logs (<code>docker logs groundwork-lens</code>) for the one-time setup code.
   </p>
   <form method="post" action="/setup/unlock">
@@ -26,8 +27,8 @@
 
 <!-- Step 1: Public address -->
 <div class="card">
-  <h2 class="card-title">1. Public address</h2>
-  <p class="meta-line" style="margin-bottom: 10px;">Callback and webhook URLs are computed from this address.</p>
+  <div class="step-head"><span class="step-num">1</span><h2 class="card-title">Public address</h2></div>
+  <p class="meta-line step-intro">Callback and webhook URLs are computed from this address.</p>
   <form method="post" action="/setup/public-url">
     <input type="hidden" name="_csrf" value="{{ csrf_token }}">
     <div class="form-group">
@@ -42,21 +43,21 @@
 
 <!-- Step 2 & 3 & 4: Connect GitHub -->
 <div class="card">
-  <h2 class="card-title">2. Connect GitHub (App Manifest or Service Token)</h2>
-  <p class="meta-line" style="margin-bottom: 12px;">
+  <div class="step-head"><span class="step-num">2</span><h2 class="card-title">Connect GitHub</h2></div>
+  <p class="meta-line step-intro">
     <strong>Mode A (Full login app, default):</strong> Most teams. Users sign in with GitHub and approve or request directly.<br>
     <strong>Mode B (Profile-only + service token):</strong> When org rules forbid broad apps.<br>
     <strong>Mode C (No login):</strong> One small team on a trusted internal network.
   </p>
 
-  <form method="post" action="{{ github_base_url }}/settings/apps/new" style="margin-bottom: 16px;">
+  <form method="post" action="{{ github_base_url }}/settings/apps/new" class="mb-md">
     <input type="hidden" name="manifest" value="{{ github_manifest_json }}">
     <button class="btn btn-primary" type="submit">Create GitHub App automatically</button>
   </form>
 
   <details>
     <summary>Or enter GitHub credentials / Mode B &amp; C token manually</summary>
-    <form method="post" action="/setup/host" style="margin-top: 12px;">
+    <form method="post" action="/setup/host" class="mt-md">
       <input type="hidden" name="_csrf" value="{{ csrf_token }}">
       <input type="hidden" name="kind" value="github">
       <div class="form-group">
@@ -106,11 +107,11 @@
 
 <!-- Connect GitLab -->
 <div class="card">
-  <h2 class="card-title">3. Connect GitLab</h2>
-  <p class="meta-line" style="margin-bottom: 10px;">
+  <div class="step-head"><span class="step-num">3</span><h2 class="card-title">Connect GitLab</h2></div>
+  <p class="meta-line step-intro">
     Create an application in GitLab (<strong>Group &rarr; Settings &rarr; Applications</strong> or User Settings) using these exact values:
   </p>
-  <table class="clean-table" style="margin-bottom: 12px;">
+  <table class="clean-table mb-md">
     <tbody>
       <tr>
         <th>Name</th>
@@ -172,10 +173,11 @@
 
 <!-- Step 5 & 6: Check & Finish -->
 <div class="card">
-  <h2 class="card-title">4. Connected hosts &amp; Check</h2>
+  <div class="step-head"><span class="step-num">4</span><h2 class="card-title">Test connections and finish</h2></div>
   {% if hosts %}
+    <div class="divided">
     {% for h in hosts %}
-      <div class="row-between" style="padding: 8px 0; border-bottom: 1px solid var(--border);">
+      <div class="row-between">
         <div>
           <strong>{{ h.name }}</strong> <span class="badge">{{ h.kind }} · Mode {{ h.sign_in_mode }}</span>
           <div class="meta-line">{{ h.base_url }}</div>
@@ -187,7 +189,8 @@
         </form>
       </div>
     {% endfor %}
-    <div style="margin-top: 14px;" class="stack-row">
+    </div>
+    <div class="stack-row mt-md">
       <form method="post" action="/setup/complete">
         <input type="hidden" name="_csrf" value="{{ csrf_token }}">
         <button class="btn btn-primary" type="submit">Finish setup &amp; pick projects</button>

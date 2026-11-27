@@ -1,44 +1,52 @@
 {% extends "base.html" %}
 {% block title %}Portfolio — GroundWork Lens{% endblock %}
 {% block content %}
-<div class="row-between" style="margin-bottom: 12px;">
-  <h1 class="page-title" style="margin: 0;">Your projects</h1>
+<div class="project-head">
+  <div>
+    <h1 class="page-title">Your projects</h1>
+    <p class="page-lede">What is waiting, what needs sign-off, and what is being built, across every project you follow.</p>
+  </div>
   <a class="btn btn-ghost btn-sm" href="/projects/select">Manage projects</a>
 </div>
 
 {% if cards %}
+<div class="portfolio-grid">
   {% for c in cards %}
-  <div class="card">
-    <div class="row-between">
-      <a href="/projects/{{ c.project.id }}" class="card-title" style="margin: 0;">{{ c.project.display_name }}</a>
-      <span class="meta-line">last activity {{ c.last_activity_rel }}</span>
+  <div class="card portfolio-card">
+    <div class="card-head">
+      <div>
+        <h2 class="card-title"><a href="/projects/{{ c.project.id }}">{{ c.project.display_name }}</a></h2>
+        <div class="meta-line mt-xs">Last activity {{ c.last_activity_rel }}</div>
+      </div>
+      {% if c.project.is_workspace %}
+        <span class="badge">Workspace</span>
+      {% endif %}
     </div>
-    {% if c.project.is_workspace %}
-      <span class="badge" style="margin-top: 4px;">Workspace</span>
-    {% endif %}
     <div class="portfolio-counts">
-      <a class="count-pill" href="/projects/{{ c.project.id }}#waiting">
+      <a class="count-pill tone-waiting" href="/projects/{{ c.project.id }}#waiting">
         <strong>{{ c.counts.waiting }}</strong>
         <span>Waiting on a person</span>
       </a>
-      <a class="count-pill" href="/projects/{{ c.project.id }}#approvals">
+      <a class="count-pill tone-approval" href="/projects/{{ c.project.id }}#approvals">
         <strong>{{ c.counts.approvals }}</strong>
         <span>Ready for approval</span>
       </a>
-      <a class="count-pill" href="/projects/{{ c.project.id }}#building">
+      <a class="count-pill tone-building" href="/projects/{{ c.project.id }}#building">
         <strong>{{ c.counts.building }}</strong>
         <span>Being built</span>
       </a>
-      <a class="count-pill" href="/projects/{{ c.project.id }}#bugs">
+      <a class="count-pill tone-bug" href="/projects/{{ c.project.id }}#bugs">
         <strong>{{ c.counts.bugs }}</strong>
         <span>Open bugs</span>
       </a>
     </div>
   </div>
   {% endfor %}
+</div>
 {% else %}
-  <div class="card dot-grid-bg" style="text-align: center; padding: 32px 16px;">
-    <p class="meta-line">No projects followed yet.</p>
+  <div class="card card-empty dot-grid-bg">
+    <h2 class="card-title">You are not following any projects yet</h2>
+    <p class="meta-line">Pick the repositories you want to keep an eye on.</p>
     <a class="btn btn-primary" href="/projects/select">Choose projects</a>
   </div>
 {% endif %}

@@ -1,21 +1,20 @@
 {% extends "base.html" %}
 {% block title %}{{ item.title }} — GroundWork Lens{% endblock %}
+{% block main_class %}container-narrow{% endblock %}
 {% block content %}
-<div style="margin-bottom: 12px;">
-  <a class="meta-line" href="/projects/{{ project.id }}">&larr; Back to {{ project.display_name }}</a>
-</div>
+<a class="back-link" href="/projects/{{ project.id }}">&larr; {{ project.display_name }}</a>
 
 <div class="card">
-  <div class="row-between">
-    <h1 class="page-title" style="margin: 0;">{{ item.title }}</h1>
+  <div class="card-head">
+    <h1 class="page-title">{{ item.title }}</h1>
     {% if item.in_pr %}
       <a class="badge badge-pr" href="{{ item.in_pr.url }}" target="_blank" rel="noopener noreferrer">in PR #{{ item.in_pr.number }}</a>
     {% endif %}
   </div>
-  <div style="margin-top: 6px; font-weight: 600;">{{ item.state_plain }}</div>
-  <div class="meta-line" style="margin-top: 6px;">
+  <div class="state-line">{{ item.state_plain }}</div>
+  <div class="meta-line mt-sm">
     {% if item.requested_by %}Asked for by {{ item.requested_by }}{% endif %}
-    {% if item.owner %}{% if item.requested_by %}, {% endif %}owned by {{ item.owner }}{% endif %}
+    {%- if item.owner %}{% if item.requested_by %}, {% endif %}owned by {{ item.owner }}{% endif %}
     · <span class="mono-id">{{ item.id }}</span>
     {% if item.rfc %} · <span class="mono-id">{{ item.rfc }}</span>{% endif %}
   </div>
@@ -27,8 +26,8 @@
     <h2 class="card-title">What was asked</h2>
     {% for fk, fv in item.fields.items() %}
       {% if fv %}
-        <div style="margin-bottom: 10px;">
-          <div class="meta-line" style="text-transform: capitalize;">{{ fk.replace('_', ' ') }}</div>
+        <div class="fact">
+          <div class="field-name">{{ fk.replace('_', ' ') }}</div>
           <div>{{ fv }}</div>
         </div>
       {% endif %}
@@ -61,7 +60,7 @@
                 <option value="{{ opt }}" {% if q.answer == opt %}selected{% endif %}>{{ opt }}</option>
               {% endfor %}
             </select>
-            <input type="text" name="answer_custom_{{ q.id }}" placeholder="Or write your own answer" style="margin-top: 6px;" value="{% if q.answer and q.answer not in q.options %}{{ q.answer }}{% endif %}">
+            <input type="text" name="answer_custom_{{ q.id }}" placeholder="Or write your own answer" class="input-after" value="{% if q.answer and q.answer not in q.options %}{{ q.answer }}{% endif %}">
           {% else %}
             <textarea id="ans-{{ q.id }}" name="answer_{{ q.id }}">{{ q.answer }}</textarea>
           {% endif %}
@@ -71,7 +70,7 @@
       </form>
     {% else %}
       {% for q in item.questions %}
-        <div style="margin-bottom: 10px;">
+        <div class="fact">
           <strong>{{ q.id }}:</strong> {{ q.text }}
           <div class="meta-line">Answer: {{ q.answer or 'Waiting for answer' }}</div>
         </div>
@@ -85,11 +84,11 @@
 <div class="card">
   {% if item.summary %}
     <h2 class="card-title">Summary</h2>
-    <p style="margin-top: 0;">{{ item.summary }}</p>
+    <p>{{ item.summary }}</p>
   {% endif %}
   {% if item.done_means %}
     <h2 class="card-title">Done means</h2>
-    <p style="margin: 0;">{{ item.done_means }}</p>
+    <p>{{ item.done_means }}</p>
   {% endif %}
 </div>
 {% endif %}
@@ -98,7 +97,7 @@
 <div class="card card-waiting">
   <h2 class="card-title">Waiting on</h2>
   {% for w in item.waiting_on %}
-    <div style="margin-top: 4px;">
+    <div class="mt-xs">
       <strong>{{ w.person }}{% if w.inferred %} (probably){% endif %}:</strong> {{ w.what }}
       {% if w.task %}<span class="mono-id">{{ w.task }}</span>{% endif %}
     </div>
@@ -109,16 +108,15 @@
 {% if item.progress and item.progress.total %}
 <div class="card">
   <h2 class="card-title">Progress ({{ item.progress.done }} of {{ item.progress.total }} steps)</h2>
+  {% set pct = (item.progress.done * 100 / item.progress.total) | round | int %}
   <div class="progress-row">
-    <div class="progress-track">
-      {% set pct = (item.progress.done * 100 / item.progress.total) | round | int %}
-      <div class="progress-fill {% if pct >= 100 %}is-complete{% endif %}" style="width: {{ pct }}%;"></div>
-    </div>
+    <progress class="progress {% if pct >= 100 %}is-complete{% endif %}" max="{{ item.progress.total }}" value="{{ item.progress.done }}" aria-label="{{ item.progress.done }} of {{ item.progress.total }} steps done"></progress>
+    <span class="progress-label">{{ pct }}%</span>
   </div>
   {% if item.tasks %}
-    <div class="stack-sm" style="margin-top: 12px;">
+    <div class="task-list">
       {% for t in item.tasks if t.state != 'done' %}
-      <div style="display: flex; align-items: flex-start; gap: 8px;">
+      <div class="task">
         <span class="check-icon">
           {% if t.state == 'in_progress' %}<span class="circle-progress"></span>{% else %}<span class="circle-todo"></span>{% endif %}
         </span>
@@ -131,11 +129,11 @@
     </div>
     {% set done_tasks = item.tasks | selectattr('state', 'equalto', 'done') | list %}
     {% if done_tasks %}
-      <details style="margin-top: 10px;">
+      <details class="mt-md">
         <summary>Completed steps ({{ done_tasks | length }})</summary>
-        <div class="stack-sm" style="margin-top: 8px;">
+        <div class="task-list mt-sm">
           {% for t in done_tasks %}
-          <div style="display: flex; align-items: flex-start; gap: 8px;">
+          <div class="task">
             <span class="check-icon"><span class="circle-done">&#10003;</span></span>
             <div class="meta-line">{{ t.title }} {% if t.id %}<span class="mono-id">{{ t.id }}</span>{% endif %}</div>
           </div>
@@ -157,9 +155,10 @@
 
 {% if item.documents %}
 <div class="card">
-  <h2 class="card-title">Documents &amp; Approvals</h2>
+  <h2 class="card-title">Documents and approvals</h2>
+  <div class="divided">
   {% for d in item.documents %}
-  <div class="row-between" style="padding: 10px 0; border-bottom: 1px solid var(--border);">
+  <div class="row-between">
     <div>
       <div>
         <strong>{{ d.title or d.type }}</strong>
@@ -168,7 +167,7 @@
         {% elif d.approval == 'stale' %}
           <span class="badge badge-reapprove">Needs re-approval</span>
         {% elif d.approval == 'in-review' %}
-          <span class="badge badge-waiting">Ready for approval</span>
+          <span class="badge badge-approval">Ready for approval</span>
         {% else %}
           <span class="badge">Draft</span>
         {% endif %}
@@ -189,6 +188,7 @@
     </div>
   </div>
   {% endfor %}
+  </div>
 </div>
 {% endif %}
 
@@ -207,16 +207,18 @@
 <div class="card">
   <h2 class="card-title">Timeline</h2>
   {% if item_timeline %}
+    <ol class="timeline">
     {% for ev in item_timeline %}
-    <div style="padding: 8px 0; border-bottom: 1px solid var(--border);">
+    <li class="timeline-event">
       <div class="row-between">
         <strong>{{ ev.actor_display or ev.who or ev.type }}</strong>
         <span class="meta-line"><time data-iso="{{ ev.at }}">{{ ev.at }}</time> · {{ ev.source }}</span>
       </div>
-      {% if ev.detail %}<div>{{ ev.detail }}</div>{% endif %}
+      {% if ev.detail %}<div class="timeline-detail">{{ ev.detail }}</div>{% endif %}
       {% if ev.hash %}<div class="mono-id">{{ ev.hash }}</div>{% endif %}
-    </div>
+    </li>
     {% endfor %}
+    </ol>
   {% else %}
     <p class="meta-line">No timeline events recorded yet.</p>
   {% endif %}

@@ -1,17 +1,16 @@
 {% extends "base.html" %}
 {% block title %}{{ bug.title }} — GroundWork Lens{% endblock %}
+{% block main_class %}container-narrow{% endblock %}
 {% block content %}
-<div style="margin-bottom: 12px;">
-  <a class="meta-line" href="/projects/{{ project.id }}">&larr; Back to {{ project.display_name }}</a>
-</div>
+<a class="back-link" href="/projects/{{ project.id }}">&larr; {{ project.display_name }}</a>
 
 <div class="card">
-  <div class="row-between">
-    <h1 class="page-title" style="margin: 0;">{{ bug.title }}</h1>
-    <span class="badge {% if bug.severity in ('high', 'critical') %}badge-waiting{% endif %}">{{ bug.severity }}</span>
+  <div class="card-head">
+    <h1 class="page-title">{{ bug.title }}</h1>
+    <span class="badge {% if bug.severity in ('high', 'critical') %}badge-reapprove{% endif %}">{{ bug.severity }}</span>
   </div>
-  <div style="margin-top: 6px; font-weight: 600;">{{ bug.state_plain }}</div>
-  <div class="meta-line" style="margin-top: 6px;">
+  <div class="state-line">{{ bug.state_plain }}</div>
+  <div class="meta-line mt-sm">
     {% if bug.reported_by %}Reported by {{ bug.reported_by }}{% endif %}
     {% if bug.owner %} · Owner: {{ bug.owner }}{% endif %}
     {% if bug.rfc %} · RFC: <span class="mono-id">{{ bug.rfc }}</span>{% endif %}
@@ -21,28 +20,36 @@
 </div>
 
 <div class="card">
-  <h2 class="card-title">Expected</h2>
-  <p>{{ bug.expected or 'Not specified.' }}</p>
-  <h2 class="card-title">Actual</h2>
-  <p>{{ bug.actual or 'Not specified.' }}</p>
+  <div class="card-section">
+    <h2 class="card-title">Expected</h2>
+    <p>{{ bug.expected or 'Not specified.' }}</p>
+  </div>
+  <div class="card-section">
+    <h2 class="card-title">Actual</h2>
+    <p>{{ bug.actual or 'Not specified.' }}</p>
+  </div>
   {% if bug.where %}
+  <div class="card-section">
     <h2 class="card-title">Where and when</h2>
-    <p style="margin-bottom: 0;">{{ bug.where }}</p>
+    <p>{{ bug.where }}</p>
+  </div>
   {% endif %}
 </div>
 
 <div class="card">
   <h2 class="card-title">Timeline</h2>
   {% if item_timeline %}
+    <ol class="timeline">
     {% for ev in item_timeline %}
-    <div style="padding: 8px 0; border-bottom: 1px solid var(--border);">
+    <li class="timeline-event">
       <div class="row-between">
         <strong>{{ ev.actor_display or ev.who or ev.type }}</strong>
         <span class="meta-line"><time data-iso="{{ ev.at }}">{{ ev.at }}</time> · {{ ev.source }}</span>
       </div>
-      {% if ev.detail %}<div>{{ ev.detail }}</div>{% endif %}
-    </div>
+      {% if ev.detail %}<div class="timeline-detail">{{ ev.detail }}</div>{% endif %}
+    </li>
     {% endfor %}
+    </ol>
   {% else %}
     <p class="meta-line">No timeline events recorded yet.</p>
   {% endif %}

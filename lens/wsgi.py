@@ -19,6 +19,8 @@ from socketserver import ThreadingMixIn
 
 from jinja2 import Environment, FileSystemLoader, select_autoescape
 
+mimetypes.add_type("font/woff2", ".woff2")
+
 
 @dataclass
 class UploadedFile:
