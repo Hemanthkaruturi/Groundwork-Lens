@@ -84,6 +84,8 @@ class TestChooseBranchInPicker(TrackedBranchCase):
         _, _, page = self.client.get("/projects/select")
         key = f"{self.hid}:branchy"
         self.assertIn(f'name="branch:{key}"'.encode(), page)
+        self.assertIn(b"data-repo-search", page)
+        self.assertIn(b'data-repo-name="branchy"', page)
         return self.client.post(
             "/projects/select",
             form={"_csrf": _csrf(page), "repo_keys": key, f"branch:{key}": branch},

@@ -117,6 +117,32 @@
       .catch(function () {});
   });
 
+  // Project picker: filter the repo list as you type. Hidden repos stay selected.
+  var repoSearch = document.querySelector("[data-repo-search]");
+  if (repoSearch) {
+    var searchInput = repoSearch.querySelector("input");
+    var searchCount = repoSearch.querySelector("[data-repo-search-count]");
+    var searchEmpty = document.querySelector("[data-repo-search-empty]");
+    var repoCards = document.querySelectorAll("[data-repo-name]");
+    repoSearch.classList.remove("hidden");
+    var applyRepoSearch = function () {
+      var terms = searchInput.value.toLowerCase().split(/\s+/).filter(Boolean);
+      var shown = 0;
+      for (var k = 0; k < repoCards.length; k++) {
+        var name = repoCards[k].getAttribute("data-repo-name");
+        var match = terms.every(function (t) { return name.indexOf(t) !== -1; });
+        repoCards[k].classList.toggle("hidden", !match);
+        if (match) shown++;
+      }
+      searchCount.textContent = terms.length ? shown + " of " + repoCards.length + " shown" : "";
+      if (searchEmpty) searchEmpty.classList.toggle("hidden", shown > 0);
+    };
+    searchInput.addEventListener("input", applyRepoSearch);
+    searchInput.addEventListener("keydown", function (ev) {
+      if (ev.key === "Enter") ev.preventDefault(); // don't submit the form from the search box
+    });
+  }
+
   // Format ISO timestamps in viewer's local timezone
   var timeEls = document.querySelectorAll("time[data-iso]");
   for (var i = 0; i < timeEls.length; i++) {

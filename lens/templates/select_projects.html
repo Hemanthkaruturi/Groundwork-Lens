@@ -12,9 +12,14 @@
 {% if repos %}
 <form method="post" action="/projects/select">
   <input type="hidden" name="_csrf" value="{{ csrf_token }}">
+  <div class="repo-search hidden" data-repo-search>
+    <input type="search" id="repo-search" placeholder="Search {{ repos | length }} repositories"
+           aria-label="Search repositories" autocomplete="off" spellcheck="false">
+    <p class="meta-line mt-xs" data-repo-search-count aria-live="polite"></p>
+  </div>
   <div class="stack-sm">
     {% for r in repos %}
-    <label class="card choice">
+    <label class="card choice" data-repo-name="{{ r.full_name | lower }}">
       <input type="checkbox" name="repo_keys" value="{{ r.host_id }}:{{ r.full_name }}"
              {% if r.followed %}checked{% endif %}>
       <div class="choice-body">
@@ -52,6 +57,9 @@
       </div>
     </label>
     {% endfor %}
+    <div class="card hidden" data-repo-search-empty>
+      <p class="meta-line">No repositories match your search.</p>
+    </div>
   </div>
   <button class="btn btn-primary mt-md" type="submit">Save and view projects</button>
 </form>
