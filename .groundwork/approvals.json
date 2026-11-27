@@ -1,10 +1,10 @@
 {
   "DECISIONS/RFC-0001-groundwork-lens.md": {
-    "hash": "60aa074422ba58b41f03ba337ff9ea8bf71441634bbec026a16a3382597c77a1",
+    "hash": "680c3529b1ea9b56b6870698c53107f4f66a6c692ef64b644f7dd8ae6af2215e",
     "signers": [
       {
-        "who": "hemanth@groundwork.local",
-        "at": "2026-11-26T10:00:00Z"
+        "at": "2026-11-27T04:27:10Z",
+        "who": "hemanth@groundwork.local"
       }
     ]
   }

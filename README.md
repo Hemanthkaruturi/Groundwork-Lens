@@ -1,6 +1,6 @@
 # GroundWork Lens
 
-A self-hosted web view for GroundWork projects on GitHub and GitLab. Designed for leaders and product managers on a phone: see what is waiting on a person, what needs approval, what is being built, and which bugs are open — without opening a repository or using an LLM.
+A self-hosted web view for GroundWork projects on GitHub and GitLab. Designed for leaders and product managers: see what is waiting on a person, what needs approval, what is being built, and which bugs are open — on desktop or mobile, without opening a repository or using an LLM.
 
 ## Quick start (one command, no config file)
 

@@ -7,7 +7,7 @@ Thank you for contributing to GroundWork Lens!
 1. **No LLM, anywhere.** All views come deterministically from GroundWork files and git history.
 2. **One parser.** Never parse GroundWork markdown or front matter in `lens/`. All parsing lives in `engine/` (Python standard library only).
 3. **Zero external network calls.** Serve all assets locally; only talk to configured GitHub or GitLab hosts.
-4. **Phone first.** Test every view at 360 px width with keyboard navigation and 44 px minimum tap targets.
+4. **Desktop primary, responsive on mobile.** Design primarily for desktop browsers while keeping every view usable on mobile screens with keyboard navigation and 44 px minimum tap targets.
 
 ## Local development
 
