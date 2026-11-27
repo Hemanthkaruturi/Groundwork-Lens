@@ -12,8 +12,8 @@ from unittest.mock import MagicMock
 from cryptography.hazmat.primitives import serialization
 from cryptography.hazmat.primitives.asymmetric import rsa
 
-from lens.hosts.base import RateLimitError
-from lens.hosts.github import GitHubAdapter, build_app_manifest
+from lens.hosts.base import HostError, RateLimitError
+from lens.hosts.github import AppNotInstalledError, GitHubAdapter, build_app_manifest, is_publicly_reachable
 from lens.hosts.gitlab import GitLabAdapter
 
 
@@ -81,6 +81,49 @@ class TestHostAdapters(unittest.TestCase):
         sig = "sha256=" + hmac.new(b"wsec", payload, hashlib.sha256).hexdigest()
         self.assertTrue(gh.verify_webhook({"X-Hub-Signature-256": sig}, payload, "wsec"))
         self.assertFalse(gh.verify_webhook({"X-Hub-Signature-256": "sha256=bad"}, payload, "wsec"))
+
+    def test_github_manifest_for_local_address_omits_webhook(self) -> None:
+        # GitHub rejects manifests whose hook URL is localhost, even when inactive.
+        manifest = build_app_manifest("http://localhost:8080", webhook_active=False)
+        self.assertNotIn("hook_attributes", manifest)
+        self.assertEqual(manifest["default_events"], [])
+        self.assertEqual(manifest["callback_urls"], ["http://localhost:8080/auth/github/callback"])
+        self.assertFalse(manifest["public"])
+
+        public = build_app_manifest("https://lens.example.com", public=True)
+        self.assertTrue(public["public"])
+        self.assertEqual(public["hook_attributes"], {"url": "https://lens.example.com/webhooks/github", "active": False})
+        self.assertEqual(len(public["callback_urls"]), len(set(public["callback_urls"])))
+
+    def test_is_publicly_reachable(self) -> None:
+        for url in ("http://localhost:8080", "http://127.0.0.1:8080", "http://10.0.0.5", "http://192.168.1.20:8080",
+                    "http://lens.local", "http://lens", "http://[::1]:8080"):
+            self.assertFalse(is_publicly_reachable(url), url)
+        for url in ("https://lens.example.com", "https://8.8.8.8"):
+            self.assertTrue(is_publicly_reachable(url), url)
+
+    def test_github_repo_without_app_installation_explains_how_to_fix(self) -> None:
+        sess = MagicMock()
+        sess.request.side_effect = [
+            _fake_resp(404, {"message": "Not Found"}),  # /repos/org/sub/installation
+            _fake_resp(404, {"message": "Not Found"}),  # /repos/org/sub (no token)
+        ]
+        gh = GitHubAdapter(
+            session=sess,
+            credentials={"app_id": "1", "private_key": _generate_test_rsa_pem(), "slug": "acme-lens"},
+        )
+        with self.assertRaises(HostError) as ctx:
+            gh.get_repo_info("org/sub")
+        msg = str(ctx.exception)
+        self.assertIn("not installed on org/sub", msg)
+        self.assertIn("https://github.com/apps/acme-lens/installations/new", msg)
+        # Must not fall back to another installation's token.
+        called = [c.args[1] if len(c.args) > 1 else c.kwargs.get("url", "") for c in sess.request.call_args_list]
+        self.assertFalse(any("/app/installations" in str(u) for u in called))
+
+        sess.request.side_effect = [_fake_resp(404, {"message": "Not Found"})]
+        with self.assertRaises(AppNotInstalledError):
+            gh.get_installation_token("org/other")
 
     def test_gitlab_oauth_mrs_rate_limit_expiry_warning_and_webhook(self) -> None:
         sess = MagicMock()

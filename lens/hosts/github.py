@@ -4,11 +4,12 @@ from __future__ import annotations
 
 import hashlib
 import hmac
+import ipaddress
 import json
 import time
 from datetime import datetime, timezone
 from typing import Any
-from urllib.parse import urlencode
+from urllib.parse import urlencode, urlparse
 
 import jwt
 import requests
@@ -25,32 +26,74 @@ from lens.hosts.base import (
 )
 
 
-def build_app_manifest(public_url: str, app_name: str = "GroundWork Lens", webhook_active: bool = False) -> dict[str, Any]:
-    """Build GitHub App Manifest payload matching Section 10.4."""
+def is_publicly_reachable(url: str) -> bool:
+    """True when GitHub's servers could plausibly reach ``url``.
+
+    GitHub rejects an App manifest whose webhook URL points at localhost or a
+    private network ("Hook url is not supported because it isn't reachable over
+    the public Internet"), even when the webhook is inactive.
+    """
+    host = (urlparse(url).hostname or "").lower().rstrip(".")
+    if not host or host == "localhost" or host.endswith((".localhost", ".local", ".internal", ".lan", ".home.arpa")):
+        return False
+    if "." not in host and ":" not in host:
+        return False  # single-label intranet name
+    try:
+        ip = ipaddress.ip_address(host)
+    except ValueError:
+        return True
+    return not (ip.is_private or ip.is_loopback or ip.is_link_local or ip.is_reserved or ip.is_unspecified)
+
+
+def build_app_manifest(
+    public_url: str,
+    app_name: str = "GroundWork Lens",
+    webhook_active: bool = False,
+    public: bool = False,
+) -> dict[str, Any]:
+    """Build GitHub App Manifest payload matching Section 10.4.
+
+    ``public`` lets accounts other than the app owner install the app (needed
+    when people sign in with, or keep repos under, a different GitHub account).
+    The webhook is only included when ``public_url`` is publicly reachable.
+    """
     base = public_url.rstrip("/")
+    callback_urls = [f"{base}/auth/github/callback"]
+    local_fallback = "http://localhost:8080/auth/github/callback"
+    if local_fallback not in callback_urls:
+        callback_urls.append(local_fallback)
     manifest: dict[str, Any] = {
         "name": app_name,
         "url": base,
         "redirect_url": f"{base}/setup/github/manifest-callback",
-        "callback_urls": [
-            f"{base}/auth/github/callback",
-            "http://localhost:8080/auth/github/callback",
-        ],
+        "callback_urls": callback_urls,
         "request_oauth_on_install": False,
-        "public": False,
+        "public": bool(public),
         "default_permissions": {
             "contents": "write",
             "metadata": "read",
             "pull_requests": "write",
             "emails": "read",
         },
-        "default_events": ["push", "pull_request"] if webhook_active else [],
+        "default_events": [],
     }
-    if webhook_active:
-        manifest["hook_attributes"] = {"url": f"{base}/webhooks/github", "active": True}
-    else:
-        manifest["hook_attributes"] = {"url": f"{base}/webhooks/github", "active": False}
+    if is_publicly_reachable(base):
+        manifest["hook_attributes"] = {"url": f"{base}/webhooks/github", "active": bool(webhook_active)}
+        if webhook_active:
+            manifest["default_events"] = ["push", "pull_request"]
     return manifest
+
+
+def app_install_url(base_url: str, slug: str) -> str:
+    """Where an owner adds repositories to (or installs) the Lens GitHub App."""
+    base = base_url.rstrip("/")
+    if slug:
+        return f"{base}/apps/{slug}/installations/new"
+    return f"{base}/settings/installations"
+
+
+class AppNotInstalledError(AuthError):
+    """The Lens GitHub App exists but is not installed on the requested repository."""
 
 
 class GitHubAdapter(HostAdapter):
@@ -144,6 +187,14 @@ class GitHubAdapter(HostAdapter):
             r = self._request("GET", f"/repos/{repo_full_name}/installation", token=app_jwt)
             if r.status_code == 200:
                 install_id = r.json().get("id")
+            elif r.status_code == 404:
+                # Do not fall back to some other installation: its token cannot
+                # see this repo either, and the resulting 404 hides the real cause.
+                raise AppNotInstalledError(
+                    f"The GroundWork Lens GitHub App is not installed on {repo_full_name}. "
+                    f"Add this repository to the app's repository access: "
+                    f"{app_install_url(self.base_url, str(self.credentials.get('slug') or ''))}"
+                )
         if not install_id:
             r = self._request("GET", "/app/installations", token=app_jwt)
             if r.status_code == 200 and r.json():
@@ -158,12 +209,15 @@ class GitHubAdapter(HostAdapter):
         self._install_token_cache[cache_key] = (tok, time.time() + 3000)
         return tok
 
-    def _read_token(self, repo_full_name: str = "", user_token: str = "") -> str:
+    def _read_token(self, repo_full_name: str = "", user_token: str = "", raise_not_installed: bool = False) -> str:
         if self.sign_in_mode in ("B", "C"):
             return self.service_token
         if self.credentials.get("app_id") and self.credentials.get("private_key"):
             try:
                 return self.get_installation_token(repo_full_name)
+            except AppNotInstalledError:
+                if raise_not_installed:
+                    raise
             except AuthError:
                 pass
         return user_token or self.service_token
@@ -248,10 +302,15 @@ class GitHubAdapter(HostAdapter):
         return [self._to_repo_info(r) for r in resp.json()]
 
     def get_repo_info(self, repo_full_name: str, user_token: str = "") -> RepoInfo:
-        tok = self._read_token(repo_full_name, user_token)
+        not_installed = ""
+        try:
+            tok = self._read_token(repo_full_name, user_token, raise_not_installed=True)
+        except AppNotInstalledError as exc:
+            not_installed = str(exc)
+            tok = user_token or self.service_token
         resp = self._request("GET", f"/repos/{repo_full_name}", token=tok)
         if resp.status_code == 404:
-            raise HostError(f"Repository {repo_full_name} not found or inaccessible")
+            raise HostError(not_installed or f"Repository {repo_full_name} not found or inaccessible")
         if resp.status_code != 200:
             raise HostError(f"Failed to read {repo_full_name} ({resp.status_code})")
         info = self._to_repo_info(resp.json())

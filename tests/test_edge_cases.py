@@ -111,6 +111,14 @@ class TestEdgeCasesE1ToE22AndN1ToN9(unittest.TestCase):
             assert snap is not None
             self.assertIn("sub-ok/RFC-0001", [i["id"] for i in snap["items"]])
             self.assertIn("sub-broken", snap["sub_repo_errors"])
+
+            # Access is granted later while the workspace commit is unchanged:
+            # a regular (non-forced) sync must retry and clear the error.
+            commit_all(create_minimal_gw_repo(host_root / "sub-broken", name="sub-broken"), "sub init")
+            adapter._save_state({"repos": {}, "prs": {}, "comments": [], "protected": {}, "read_only_users": {}, "unreadable": {}})
+            snap = worker.sync_project(pid)
+            assert snap is not None
+            self.assertFalse(snap.get("sub_repo_errors"))
             store.close()
 
     def test_e4_e5_e6_e7_e8_e9_e12_legacy_readme_timeline_aliases_agent_waiting(self) -> None:

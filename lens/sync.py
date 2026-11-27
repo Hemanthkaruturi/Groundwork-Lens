@@ -258,7 +258,15 @@ class SyncWorker:
 
             remote_sha = self._ls_remote_sha(mirror_dir, clone_url, default_branch)
             latest_snap = self.store.get_latest_snapshot(project_id, default_branch)
-            need_main_export = force or latest_snap is None or (remote_sha and latest_snap["commit_sha"] != remote_sha)
+            # Re-export when a workspace sub-repo failed last time, even if the
+            # main commit is unchanged: access may have been granted since.
+            had_sub_errors = bool(latest_snap and (latest_snap.get("data") or {}).get("sub_repo_errors"))
+            need_main_export = (
+                force
+                or latest_snap is None
+                or had_sub_errors
+                or (remote_sha and latest_snap["commit_sha"] != remote_sha)
+            )
 
             main_snapshot: dict[str, Any] | None = None
             if need_main_export:

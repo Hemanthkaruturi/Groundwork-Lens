@@ -22,6 +22,22 @@
     }
   });
 
+  // Setup wizard: "Let other GitHub accounts install this app" toggles the
+  // manifest's `public` flag. Without JS the app is created private.
+  document.addEventListener("change", function (ev) {
+    var box = ev.target;
+    if (!box.matches || !box.matches("[data-manifest-public]")) return;
+    var field = document.querySelector(box.getAttribute("data-manifest-public"));
+    if (!field) return;
+    try {
+      var manifest = JSON.parse(field.value);
+      manifest["public"] = !!box.checked;
+      field.value = JSON.stringify(manifest);
+    } catch (e) {
+      /* leave the manifest unchanged */
+    }
+  });
+
   // Confirmation prompt before approving a document
   document.addEventListener("submit", function (ev) {
     var form = ev.target;

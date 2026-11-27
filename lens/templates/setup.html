@@ -50,8 +50,21 @@
     <strong>Mode C (No login):</strong> One small team on a trusted internal network.
   </p>
 
-  <form method="post" action="{{ github_base_url }}/settings/apps/new" class="mb-md">
-    <input type="hidden" name="manifest" value="{{ github_manifest_json }}">
+  {% if not public_url_reachable %}
+  <div class="banner">
+    Lens is on a local or private address, so GitHub cannot send it webhooks. The app is created without one, and Lens checks your repositories for changes on a timer instead.
+  </div>
+  {% endif %}
+
+  <form method="post" action="{{ github_base_url }}/settings/apps/new" class="mb-md" id="gh-manifest-form">
+    <input type="hidden" name="manifest" value="{{ github_manifest_json }}" id="gh-manifest">
+    <div class="form-group">
+      <label class="stack-row">
+        <input type="checkbox" id="gh-manifest-public" data-manifest-public="#gh-manifest">
+        <span>Let other GitHub accounts and organizations install this app</span>
+      </label>
+      <div class="meta-line mt-xs">Turn this on if anyone signs in with a different GitHub account, or if your repositories belong to another account or organization. You can change it later in the app's settings on GitHub.</div>
+    </div>
     <button class="btn btn-primary" type="submit">Create GitHub App automatically</button>
   </form>
 
@@ -181,6 +194,9 @@
         <div>
           <strong>{{ h.name }}</strong> <span class="badge">{{ h.kind }} · Mode {{ h.sign_in_mode }}</span>
           <div class="meta-line">{{ h.base_url }}</div>
+          {% if h.install_url %}
+            <div class="meta-line mt-xs"><a href="{{ h.install_url }}" target="_blank" rel="noopener noreferrer">Install the app or choose its repositories</a>. For a workspace, include every sub-repo.</div>
+          {% endif %}
         </div>
         <form method="post" action="/setup/check">
           <input type="hidden" name="_csrf" value="{{ csrf_token }}">

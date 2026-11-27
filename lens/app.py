@@ -15,7 +15,7 @@ from lens.config import LensConfig
 from lens.demo import ensure_demo_project
 from lens.hosts import adapter_for_host
 from lens.hosts.base import HostError
-from lens.hosts.github import GitHubAdapter, build_app_manifest
+from lens.hosts.github import GitHubAdapter, app_install_url, build_app_manifest, is_publicly_reachable
 from lens.hosts.gitlab import GitLabAdapter
 from lens.markdown_safe import render_markdown_safe
 from lens.snapshot_merge import format_change_actor, merge_project_snapshots, relative_time, user_aliases_set
@@ -263,15 +263,26 @@ def create_app(data_dir: Path | str | None = None, start_worker: bool = False) -
         public_url = str(ctx.config.get("public_url") or req.base_url)
         gh_base = "https://github.com"
         manifest = build_app_manifest(public_url, app_name="GroundWork Lens", webhook_active=False)
+        hosts_vm = []
+        for h in ctx.store.list_hosts():
+            if h["kind"] == "local":
+                continue
+            row = dict(h)
+            slug = str((h.get("credentials") or {}).get("slug") or "")
+            row["install_url"] = app_install_url(h["base_url"], slug) if h["kind"] == "github" and slug else ""
+            row.pop("credentials", None)
+            row.pop("service_token", None)
+            hosts_vm.append(row)
         return app.render(
             "setup.html",
             session=req.session,
             setup_unlocked=unlocked,
             public_url=public_url,
             public_url_env=ctx.config.is_env_overridden("public_url"),
+            public_url_reachable=is_publicly_reachable(public_url),
             github_base_url=gh_base,
             github_manifest_json=json.dumps(manifest),
-            hosts=[h for h in ctx.store.list_hosts() if h["kind"] != "local"],
+            hosts=hosts_vm,
             csrf_token=req.csrf_token,
             flash_error=err,
             flash_info=info,
@@ -344,7 +355,14 @@ def create_app(data_dir: Path | str | None = None, start_worker: bool = False) -
                 credentials=creds,
                 webhook_secret=creds.get("webhook_secret", ""),
             )
-            return _redirect_with("/setup", info="GitHub App created and connected. Now install it on your repos and run Test connection.")
+            install = app_install_url("https://github.com", str(creds.get("slug") or ""))
+            return _redirect_with(
+                "/setup",
+                info=(
+                    "GitHub App created. Next, install it on your repositories (for a workspace, "
+                    f"include every sub-repo): {install} — then run Test connection."
+                ),
+            )
         except Exception as exc:
             return _redirect_with("/setup", err=f"GitHub App creation failed: {exc}")
 
@@ -573,7 +591,7 @@ def create_app(data_dir: Path | str | None = None, start_worker: bool = False) -
                     key = f"{host['id']}:{r.full_name}"
                     p = proj_by_key.get(key)
                     snap = ctx.store.get_latest_snapshot(p["id"]) if p else None
-                    gw_stage = ((snap or {}).get("data") or {}).get("groundwork", {}).get("stage", "current" if p else "not-started")
+                    gw_stage = ((snap or {}).get("data") or {}).get("groundwork", {}).get("stage", "not-started")
                     repos_vm.append(
                         {
                             "host_id": host["id"],
@@ -581,7 +599,12 @@ def create_app(data_dir: Path | str | None = None, start_worker: bool = False) -
                             "name": r.name,
                             "followed": bool(p and p["id"] in followed_ids),
                             "is_workspace": bool(p and p["is_workspace"]),
-                            "has_groundwork": gw_stage != "not-started" or bool(snap and snap["data"].get("items")),
+                            # None = Lens has not read this repo yet, so it cannot know.
+                            "has_groundwork": (
+                                None
+                                if snap is None
+                                else gw_stage != "not-started" or bool(snap["data"].get("items"))
+                            ),
                         }
                     )
             except Exception:

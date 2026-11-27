@@ -23,12 +23,16 @@
             <span class="badge">Workspace</span>
           {% elif r.has_groundwork %}
             <span class="badge badge-done">GroundWork</span>
+          {% elif r.has_groundwork is none %}
+            <span class="badge">Not checked yet</span>
           {% else %}
             <span class="badge">Not set up</span>
           {% endif %}
         </div>
         <div class="meta-line">{{ r.full_name }}</div>
-        {% if not r.has_groundwork %}
+        {% if r.has_groundwork is none %}
+          <div class="meta-line mt-xs">Lens checks for GroundWork after you follow this repository.</div>
+        {% elif not r.has_groundwork %}
           <div class="meta-line mt-xs">GroundWork is not set up here yet.</div>
         {% endif %}
       </div>
