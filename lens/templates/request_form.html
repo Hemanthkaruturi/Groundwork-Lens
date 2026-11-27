@@ -1,11 +1,10 @@
 {% extends "base.html" %}
 {% block title %}{% if kind == 'feature' %}Ask for a feature{% else %}Report a bug{% endif %} — {{ project.display_name }}{% endblock %}
+{% block main_class %}container-narrow{% endblock %}
 {% block content %}
-<div style="margin-bottom: 12px;">
-  <a class="meta-line" href="/projects/{{ project.id }}">&larr; Back to {{ project.display_name }}</a>
-</div>
+<a class="back-link" href="/projects/{{ project.id }}">&larr; {{ project.display_name }}</a>
 
-<h1 class="page-title">{% if kind == 'feature' %}Ask for a feature{% else %}Report a bug{% endif %}</h1>
+<h1 class="page-title mb-md">{% if kind == 'feature' %}Ask for a feature{% else %}Report a bug{% endif %}</h1>
 
 {% if gw_disabled %}
   <div class="card card-waiting">
@@ -22,7 +21,7 @@
   <div class="card">
     <h2 class="card-title">Preview your request before submitting</h2>
     <p class="meta-line">This is saved exactly as typed. The coding agent's interview will start from these words.</p>
-    <table class="clean-table" style="margin-top: 10px;">
+    <table class="clean-table mt-sm">
       <tbody>
         <tr><th>Title</th><td>{{ fields.title }}</td></tr>
         {% if kind == 'feature' %}
@@ -39,7 +38,7 @@
         <tr><th>Product area</th><td>{{ fields.product_area }}</td></tr>
       </tbody>
     </table>
-    <form method="post" action="/projects/{{ project.id }}/request/{{ kind }}" style="margin-top: 14px;">
+    <form method="post" action="/projects/{{ project.id }}/request/{{ kind }}" class="mt-md">
       <input type="hidden" name="_csrf" value="{{ csrf_token }}">
       <input type="hidden" name="step" value="submit">
       {% for k, v in fields.items() %}
@@ -143,8 +142,8 @@
     <div class="form-group">
       <label class="field-label" for="request-images-input">Screenshots (optional, up to 5 images, max 5 MB each)</label>
       <input id="request-images-input" name="images" type="file" multiple accept="image/png,image/jpeg,image/webp,image/gif">
-      <div id="request-images-info" class="meta-line" style="margin-top: 4px;"></div>
-      <div class="banner banner-waiting" style="margin-top: 8px;">
+      <div id="request-images-info" class="meta-line mt-xs"></div>
+      <div class="banner banner-waiting mt-sm">
         Images stay in the repository's git history for good and hidden metadata is stripped on upload. Do not attach passwords, keys, or customer data.
       </div>
     </div>

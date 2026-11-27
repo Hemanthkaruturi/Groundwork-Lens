@@ -2,14 +2,15 @@
 {% block title %}{{ project.display_name }} — GroundWork Lens{% endblock %}
 {% block content %}
 
-<div class="row-between">
+<div class="project-head">
   <div>
-    <h1 class="page-title" style="margin-bottom: 2px;">{{ project.display_name }}</h1>
+    <h1 class="page-title">{{ project.display_name }}</h1>
     <div class="meta-line">
+      <span class="sync-dot" aria-hidden="true"></span>
       {% if view.commit %}
-        as of <span class="mono-id">{{ view.commit }}</span>, {{ view.synced_rel }}
+        Synced {{ view.synced_rel }} at <span class="mono-id">{{ view.commit }}</span>
       {% else %}
-        synced {{ view.synced_rel }}
+        Synced {{ view.synced_rel }}
       {% endif %}
       {% if project.last_sync_status == 'rate_limited' %}
         · {{ project.last_sync_error or 'host rate limit' }}
@@ -22,39 +23,64 @@
   </form>
 </div>
 
-<div class="seg-toggle" role="tablist" aria-label="Filter items">
-  <a href="/projects/{{ project.id }}?mine=0" class="{% if not only_mine %}is-active{% endif %}">All</a>
-  <a href="/projects/{{ project.id }}?mine=1" class="{% if only_mine %}is-active{% endif %}">Waiting on me</a>
+<nav class="status-strip" aria-label="Summary">
+  <a class="status-cell tone-waiting {% if not view.counts.waiting %}is-zero{% endif %}" href="#waiting">
+    <span class="status-num">{{ view.counts.waiting }}</span>
+    <span class="status-name">Waiting on a person</span>
+  </a>
+  <a class="status-cell tone-approval {% if not view.counts.approvals %}is-zero{% endif %}" href="#approvals">
+    <span class="status-num">{{ view.counts.approvals }}</span>
+    <span class="status-name">Ready for approval</span>
+  </a>
+  <a class="status-cell tone-building {% if not view.counts.building %}is-zero{% endif %}" href="#building">
+    <span class="status-num">{{ view.counts.building }}</span>
+    <span class="status-name">Being built</span>
+  </a>
+  <a class="status-cell tone-bug {% if not view.counts.bugs %}is-zero{% endif %}" href="#bugs">
+    <span class="status-num">{{ view.counts.bugs }}</span>
+    <span class="status-name">Open bugs</span>
+  </a>
+</nav>
+
+<div class="toolbar">
+  <div class="seg-toggle" role="tablist" aria-label="Filter items">
+    <a href="/projects/{{ project.id }}?mine=0" class="{% if not only_mine %}is-active{% endif %}">All</a>
+    <a href="/projects/{{ project.id }}?mine=1" class="{% if only_mine %}is-active{% endif %}">Waiting on me</a>
+  </div>
 </div>
 
-{% if project.archived %}
-  <div class="banner" style="margin-top: 12px;">This repo is archived (read-only).</div>
+{% set has_banners = project.archived or project.removed_groundwork_at or project.last_sync_status in ('unreachable', 'empty') or view.sub_repo_errors %}
+{% if has_banners %}
+<div class="banner-stack">
+  {% if project.archived %}
+    <div class="banner">This repo is archived (read-only).</div>
+  {% endif %}
+  {% if project.removed_groundwork_at %}
+    <div class="banner banner-waiting">
+      GroundWork was removed from this repo on {{ project.removed_groundwork_at }}. Showing the last saved snapshot as history.
+    </div>
+  {% endif %}
+  {% if project.last_sync_status == 'unreachable' %}
+    <div class="banner banner-reapprove">
+      Lens can no longer read this repo: {{ project.last_sync_error }}
+    </div>
+  {% endif %}
+  {% if project.last_sync_status == 'empty' %}
+    <div class="banner">This repo is empty.</div>
+  {% endif %}
+  {% for sub_name, sub_err in view.sub_repo_errors.items() %}
+    <div class="banner banner-reapprove">
+      <strong>{{ sub_name }}</strong> could not be read: {{ sub_err }}
+    </div>
+  {% endfor %}
+</div>
 {% endif %}
-{% if project.removed_groundwork_at %}
-  <div class="banner banner-waiting" style="margin-top: 12px;">
-    GroundWork was removed from this repo on {{ project.removed_groundwork_at }}. Showing the last saved snapshot as history.
-  </div>
-{% endif %}
-{% if project.last_sync_status == 'unreachable' %}
-  <div class="banner banner-reapprove" style="margin-top: 12px;">
-    Lens can no longer read this repo: {{ project.last_sync_error }}
-  </div>
-{% endif %}
-{% if project.last_sync_status == 'empty' %}
-  <div class="banner" style="margin-top: 12px;">This repo is empty.</div>
-{% endif %}
-
-{% for sub_name, sub_err in view.sub_repo_errors.items() %}
-  <div class="banner banner-reapprove" style="margin-top: 12px;">
-    <strong>{{ sub_name }}</strong> could not be read: {{ sub_err }}
-  </div>
-{% endfor %}
 
 {% if view.groundwork.unreadable %}
-  <div class="card" style="margin-top: 12px;">
+  <div class="card mt-md">
     <details>
       <summary>{{ view.groundwork.unreadable | length }} document(s) could not be read</summary>
-      <ul style="margin: 8px 0 0; padding-left: 18px;">
+      <ul class="plain-list">
         {% for u in view.groundwork.unreadable %}
           <li><span class="mono-id">{{ u.path }}</span> — {{ u.problem }}</li>
         {% endfor %}
@@ -64,11 +90,11 @@
 {% endif %}
 
 {% if view.groundwork.stage in ('scaffolded', 'documented') and not view.waiting_list and not view.approvals_list and not view.building_list and not view.bugs_list %}
-  <div class="card dot-grid-bg" style="margin-top: 16px;">
+  <div class="card card-empty dot-grid-bg mt-md">
     <h2 class="card-title">No work recorded yet</h2>
     <p class="meta-line">Work appears here once the team writes its first RFC, or you can start by asking for a feature or reporting a bug.</p>
     {% if view.groundwork.next_steps %}
-      <ul style="margin: 8px 0 0; padding-left: 18px;">
+      <ul class="plain-list">
         {% for step in view.groundwork.next_steps %}
           <li class="meta-line">{{ step }}</li>
         {% endfor %}
@@ -78,163 +104,167 @@
 {% endif %}
 
 <!-- 1. WAITING ON A PERSON -->
-<div id="waiting" class="section-label">
-  <span>Waiting on a person ({{ view.counts.waiting }})</span>
-</div>
-{% if view.waiting_list %}
+<section class="section tone-waiting" aria-labelledby="waiting">
+  <h2 id="waiting" class="section-head">Waiting on a person <span class="section-count">{{ view.counts.waiting }}</span></h2>
+  <div class="list">
   {% for w in view.waiting_list %}
-  <a class="card card-clickable card-waiting" href="/projects/{{ project.id }}/item/{{ w.item.id | urlencode }}?ref={{ w.item.source_ref | urlencode }}">
-    <div class="row-between">
-      <div class="card-title" style="margin: 0;">{{ w.item.title }}</div>
-      <div class="stack-row">
-        {% if w.item.in_pr %}
-          <span class="badge badge-pr">in PR #{{ w.item.in_pr.number }}</span>
-        {% endif %}
-        <span class="badge badge-waiting">waiting {{ w.waiting_days }}d</span>
+    <a class="list-row tone-waiting" href="/projects/{{ project.id }}/item/{{ w.item.id | urlencode }}?ref={{ w.item.source_ref | urlencode }}">
+      <div class="row-top">
+        <div class="row-title">{{ w.item.title }}</div>
+        <div class="row-badges">
+          {% if w.item.in_pr %}
+            <span class="badge badge-pr">in PR #{{ w.item.in_pr.number }}</span>
+          {% endif %}
+          <span class="badge badge-waiting">waiting {{ w.waiting_days }}d</span>
+        </div>
       </div>
-    </div>
-    <div style="margin-top: 4px;">
-      <strong>{{ w.person }}{% if w.inferred %} (probably){% endif %}:</strong> {{ w.what }}
-    </div>
-    <div class="meta-line" style="margin-top: 4px;">
-      <span class="mono-id">{{ w.item.id }}</span> · {{ w.item.repo }}
-    </div>
-  </a>
+      <div class="row-body">
+        <span class="who">{{ w.person }}{% if w.inferred %} (probably){% endif %}:</span> {{ w.what }}
+      </div>
+      <div class="row-meta">
+        <span class="mono-id">{{ w.item.id }}</span>
+        <span>{{ w.item.repo }}</span>
+      </div>
+    </a>
+  {% else %}
+    <div class="list-empty">Nothing is waiting on a person right now.</div>
   {% endfor %}
-{% else %}
-  <div class="card"><span class="meta-line">Nothing is waiting on a person right now.</span></div>
-{% endif %}
+  </div>
+</section>
 
 <!-- 2. READY FOR APPROVAL -->
-<div id="approvals" class="section-label">
-  <span>Ready for approval ({{ view.counts.approvals }})</span>
-</div>
-{% if view.approvals_list %}
+<section class="section tone-approval" aria-labelledby="approvals">
+  <h2 id="approvals" class="section-head">Ready for approval <span class="section-count">{{ view.counts.approvals }}</span></h2>
+  <div class="list">
   {% for a in view.approvals_list %}
-  <a class="card card-clickable {% if a.is_stale %}card-reapprove{% endif %}"
-     href="/projects/{{ project.id }}/doc?path={{ a.doc.path | urlencode }}&amp;repo={{ a.item.repo | urlencode }}&amp;ref={{ a.item.source_ref | urlencode }}&amp;pr={{ a.item.in_pr.number if a.item.in_pr else 0 }}">
-    <div class="row-between">
-      <div class="card-title" style="margin: 0;">{{ a.doc.title or a.item.title }} — {{ a.doc.type }}</div>
-      <div class="stack-row">
-        {% if a.item.in_pr %}
-          <span class="badge badge-pr">in PR #{{ a.item.in_pr.number }}</span>
-        {% endif %}
-        {% if a.is_stale %}
-          <span class="badge badge-reapprove">Needs re-approval</span>
-        {% elif a.doc.approval == 'in-review' %}
-          <span class="badge badge-waiting">Ready for approval</span>
-        {% else %}
-          <span class="badge">Draft</span>
-        {% endif %}
+    <a class="list-row {% if a.is_stale %}tone-bug{% else %}tone-approval{% endif %}"
+       href="/projects/{{ project.id }}/doc?path={{ a.doc.path | urlencode }}&amp;repo={{ a.item.repo | urlencode }}&amp;ref={{ a.item.source_ref | urlencode }}&amp;pr={{ a.item.in_pr.number if a.item.in_pr else 0 }}">
+      <div class="row-top">
+        <div class="row-title">{{ a.doc.title or a.item.title }} <span class="meta-line">{{ a.doc.type }}</span></div>
+        <div class="row-badges">
+          {% if a.item.in_pr %}
+            <span class="badge badge-pr">in PR #{{ a.item.in_pr.number }}</span>
+          {% endif %}
+          {% if a.is_stale %}
+            <span class="badge badge-reapprove">Needs re-approval</span>
+          {% elif a.doc.approval == 'in-review' %}
+            <span class="badge badge-approval">Ready for approval</span>
+          {% else %}
+            <span class="badge">Draft</span>
+          {% endif %}
+        </div>
       </div>
-    </div>
-    <div class="meta-line" style="margin-top: 4px;">
-      {% if a.needs %}Waiting on: {{ a.needs | join(', ') }} · {% endif %}
-      <span class="mono-id">{{ a.doc.path }}</span>
-    </div>
-  </a>
+      <div class="row-meta">
+        {% if a.needs %}<span>Waiting on {{ a.needs | join(', ') }}</span>{% endif %}
+        <span class="mono-id">{{ a.doc.path }}</span>
+      </div>
+    </a>
+  {% else %}
+    <div class="list-empty">No documents are waiting for approval.</div>
   {% endfor %}
-{% else %}
-  <div class="card"><span class="meta-line">No documents are waiting for approval.</span></div>
-{% endif %}
+  </div>
+</section>
 
 <!-- 3. BEING BUILT -->
-<div id="building" class="section-label">
-  <span>Being built ({{ view.counts.building }})</span>
-</div>
-{% if view.building_list %}
+<section class="section tone-building" aria-labelledby="building">
+  <h2 id="building" class="section-head">Being built <span class="section-count">{{ view.counts.building }}</span></h2>
+  <div class="list">
   {% for it in view.building_list %}
-  <a class="card card-clickable" href="/projects/{{ project.id }}/item/{{ it.id | urlencode }}?ref={{ it.source_ref | urlencode }}">
-    <div class="row-between">
-      <div class="card-title" style="margin: 0;">{{ it.title }}</div>
-      <div class="stack-row">
-        {% if it.in_pr %}
-          <span class="badge badge-pr">in PR #{{ it.in_pr.number }}</span>
-        {% endif %}
-        <span class="meta-line">{{ it.state_plain }}</span>
+    <a class="list-row tone-building" href="/projects/{{ project.id }}/item/{{ it.id | urlencode }}?ref={{ it.source_ref | urlencode }}">
+      <div class="row-top">
+        <div class="row-title">{{ it.title }}</div>
+        <div class="row-badges">
+          {% if it.in_pr %}
+            <span class="badge badge-pr">in PR #{{ it.in_pr.number }}</span>
+          {% endif %}
+          <span class="meta-line">{{ it.state_plain }}</span>
+        </div>
       </div>
-    </div>
-    {% if it.progress and it.progress.total %}
-    <div class="progress-row">
-      <div class="progress-track">
-        {% set pct = (it.progress.done * 100 / it.progress.total) | round | int %}
-        <div class="progress-fill {% if pct >= 100 %}is-complete{% endif %}" style="width: {{ pct }}%;"></div>
+      {% if it.progress and it.progress.total %}
+      {% set pct = (it.progress.done * 100 / it.progress.total) | round | int %}
+      <div class="progress-row">
+        <progress class="progress {% if pct >= 100 %}is-complete{% endif %}" max="{{ it.progress.total }}" value="{{ it.progress.done }}" aria-label="{{ it.progress.done }} of {{ it.progress.total }} steps done"></progress>
+        <span class="progress-label">{{ it.progress.done }}/{{ it.progress.total }} steps</span>
       </div>
-      <span class="meta-line">{{ it.progress.done }}/{{ it.progress.total }} steps</span>
-    </div>
-    {% endif %}
-    {% if it.last_note %}
-      <div class="meta-line" style="margin-top: 6px;">last note ({{ it.last_note_rel }}): {{ it.last_note.text }}</div>
-    {% endif %}
-    {% if it.idle_notice %}
-      <div class="meta-line" style="margin-top: 4px;">{{ it.idle_notice }}</div>
-    {% endif %}
-    <div class="meta-line" style="margin-top: 4px;"><span class="mono-id">{{ it.id }}</span></div>
-  </a>
+      {% endif %}
+      {% if it.last_note %}
+        <div class="row-note">Last note, {{ it.last_note_rel }}: {{ it.last_note.text }}</div>
+      {% endif %}
+      <div class="row-meta">
+        <span class="mono-id">{{ it.id }}</span>
+        {% if it.idle_notice %}<span>{{ it.idle_notice }}</span>{% endif %}
+      </div>
+    </a>
+  {% else %}
+    <div class="list-empty">No active features are currently in progress.</div>
   {% endfor %}
-{% else %}
-  <div class="card"><span class="meta-line">No active features are currently in progress.</span></div>
-{% endif %}
+  </div>
+</section>
 
 <!-- 4. OPEN BUGS -->
-<div id="bugs" class="section-label">
-  <span>Open bugs ({{ view.counts.bugs }})</span>
-</div>
-{% if view.bugs_list %}
+<section class="section tone-bug" aria-labelledby="bugs">
+  <h2 id="bugs" class="section-head">Open bugs <span class="section-count">{{ view.counts.bugs }}</span></h2>
+  <div class="list">
   {% for b in view.bugs_list %}
-  <a class="card card-clickable" href="/projects/{{ project.id }}/bug/{{ b.id | urlencode }}?ref={{ b.source_ref | urlencode }}">
-    <div class="row-between">
-      <div class="card-title" style="margin: 0;">{{ b.title }}</div>
-      <span class="badge {% if b.severity in ('high', 'critical') %}badge-waiting{% endif %}">{{ b.severity }}</span>
-    </div>
-    <div style="margin-top: 4px;">{{ b.state_plain }}</div>
-    <div class="meta-line" style="margin-top: 4px;">
-      {% if b.reported_by %}Reported by {{ b.reported_by }} · {% endif %}
-      {% if b.owner %}Owner: {{ b.owner }} · {% endif %}
-      <span class="mono-id">{{ b.id }}</span>
-    </div>
-  </a>
+    <a class="list-row {% if b.severity in ('high', 'critical') %}tone-bug{% endif %}" href="/projects/{{ project.id }}/bug/{{ b.id | urlencode }}?ref={{ b.source_ref | urlencode }}">
+      <div class="row-top">
+        <div class="row-title">{{ b.title }}</div>
+        <div class="row-badges">
+          <span class="badge {% if b.severity in ('high', 'critical') %}badge-reapprove{% endif %}">{{ b.severity }}</span>
+        </div>
+      </div>
+      <div class="row-body">{{ b.state_plain }}</div>
+      <div class="row-meta">
+        {% if b.reported_by %}<span>Reported by {{ b.reported_by }}</span>{% endif %}
+        {% if b.owner %}<span>Owner: {{ b.owner }}</span>{% endif %}
+        <span class="mono-id">{{ b.id }}</span>
+      </div>
+    </a>
+  {% else %}
+    <div class="list-empty">No open bugs.</div>
   {% endfor %}
-{% else %}
-  <div class="card"><span class="meta-line">No open bugs.</span></div>
-{% endif %}
+  </div>
+</section>
 
 <!-- SHIPPED RECENTLY -->
-<div class="section-label">
-  <span>Shipped recently ({{ view.shipped_list | length }})</span>
-</div>
-{% if view.shipped_list %}
+<section class="section tone-done" aria-labelledby="shipped">
+  <h2 id="shipped" class="section-head">Shipped recently <span class="section-count">{{ view.shipped_list | length }}</span></h2>
+  <div class="list">
   {% for s in view.shipped_list %}
-  <a class="card card-clickable" href="/projects/{{ project.id }}/item/{{ s.id | urlencode }}">
-    <div class="row-between">
-      <div class="card-title" style="margin: 0;">{{ s.title }}</div>
-      <span class="badge badge-done">Done</span>
-    </div>
-    <div class="meta-line"><span class="mono-id">{{ s.id }}</span> · {{ s.last_activity_rel }}</div>
-  </a>
+    <a class="list-row" href="/projects/{{ project.id }}/item/{{ s.id | urlencode }}">
+      <div class="row-top">
+        <div class="row-title">{{ s.title }}</div>
+        <div class="row-badges"><span class="badge badge-done">Done</span></div>
+      </div>
+      <div class="row-meta">
+        <span class="mono-id">{{ s.id }}</span>
+        <span>{{ s.last_activity_rel }}</span>
+      </div>
+    </a>
+  {% else %}
+    <div class="list-empty">Nothing shipped in the last 30 days.</div>
   {% endfor %}
-{% else %}
-  <div class="card"><span class="meta-line">Nothing shipped in the last 30 days.</span></div>
-{% endif %}
+  </div>
+</section>
 
 <!-- YOUR REQUESTS -->
-<div class="section-label">
-  <span>Your requests ({{ view.your_requests_list | length }})</span>
-</div>
-{% if view.your_requests_list %}
+<section class="section tone-neutral" aria-labelledby="requests">
+  <h2 id="requests" class="section-head">Your requests <span class="section-count">{{ view.your_requests_list | length }}</span></h2>
+  <div class="list">
   {% for r in view.your_requests_list %}
-  <a class="card card-clickable" href="/projects/{{ project.id }}/item/{{ r.id | urlencode }}">
-    <div class="row-between">
-      <div class="card-title" style="margin: 0;">{{ r.title }}</div>
-      <span class="badge">{{ r.request_kind }}</span>
-    </div>
-    <div style="margin-top: 4px;">{{ r.state_plain }}</div>
-    <div class="meta-line"><span class="mono-id">{{ r.req_id or r.id }}</span></div>
-  </a>
+    <a class="list-row" href="/projects/{{ project.id }}/item/{{ r.id | urlencode }}">
+      <div class="row-top">
+        <div class="row-title">{{ r.title }}</div>
+        <div class="row-badges"><span class="badge">{{ r.request_kind }}</span></div>
+      </div>
+      <div class="row-body">{{ r.state_plain }}</div>
+      <div class="row-meta"><span class="mono-id">{{ r.req_id or r.id }}</span></div>
+    </a>
+  {% else %}
+    <div class="list-empty">No requests yet. Use Ask for a feature or Report a bug to start one.</div>
   {% endfor %}
-{% else %}
-  <div class="card"><span class="meta-line">No requests yet. Use Ask for a feature or Report a bug to start one.</span></div>
-{% endif %}
+  </div>
+</section>
 
 <!-- WORKSPACE SUB-REPOS WITHOUT GROUNDWORK (N5) -->
 {% set unset_subs = [] %}
@@ -244,29 +274,31 @@
   {% endif %}
 {% endfor %}
 {% if unset_subs %}
-<div class="section-label"><span>Sub-repos without GroundWork ({{ unset_subs | length }})</span></div>
-<div class="card">
-  {% for sname in unset_subs %}
-    <div class="row-between" style="padding: 6px 0;">
-      <div><strong>{{ sname }}</strong> <span class="meta-line">· not set up</span></div>
-      <a class="meta-line" href="/projects/{{ project.id }}/not-set-up?sub={{ sname | urlencode }}">Setup help</a>
-    </div>
-  {% endfor %}
-</div>
+<section class="section tone-neutral" aria-labelledby="subrepos">
+  <h2 id="subrepos" class="section-head">Sub-repos without GroundWork <span class="section-count">{{ unset_subs | length }}</span></h2>
+  <div class="list">
+    {% for sname in unset_subs %}
+      <div class="list-sub-row">
+        <div><strong>{{ sname }}</strong> <span class="meta-line">not set up</span></div>
+        <a class="btn btn-ghost btn-sm" href="/projects/{{ project.id }}/not-set-up?sub={{ sname | urlencode }}">Setup help</a>
+      </div>
+    {% endfor %}
+  </div>
+</section>
 {% endif %}
 
 <!-- OLDER / LEGACY WORK (E4, N4) -->
 {% if view.legacy_items %}
-<details style="margin-top: 20px;">
+<details class="section">
   <summary>Older work ({{ view.legacy_items | length }})</summary>
-  <div style="margin-top: 8px;">
+  <div class="list mt-sm">
     {% for lg in view.legacy_items %}
-    <a class="card card-clickable" href="/projects/{{ project.id }}/item/{{ lg.id | urlencode }}">
-      <div class="row-between">
-        <div class="card-title" style="margin: 0;">{{ lg.title }}</div>
-        <span class="badge">{{ lg.state_plain }}</span>
+    <a class="list-row" href="/projects/{{ project.id }}/item/{{ lg.id | urlencode }}">
+      <div class="row-top">
+        <div class="row-title">{{ lg.title }}</div>
+        <div class="row-badges"><span class="badge">{{ lg.state_plain }}</span></div>
       </div>
-      <div class="meta-line"><span class="mono-id">{{ lg.id }}</span></div>
+      <div class="row-meta"><span class="mono-id">{{ lg.id }}</span></div>
     </a>
     {% endfor %}
   </div>

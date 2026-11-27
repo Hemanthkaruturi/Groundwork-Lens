@@ -5,6 +5,8 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>{% block title %}GroundWork Lens{% endblock %}</title>
   <link rel="icon" type="image/svg+xml" href="/static/icon.svg">
+  <meta name="color-scheme" content="light dark">
+  <link rel="preload" href="/static/fonts/geist.woff2" as="font" type="font/woff2" crossorigin>
   <link rel="stylesheet" href="/static/style.css">
 </head>
 <body class="{% block body_class %}{% endblock %}">
@@ -21,26 +23,29 @@
       <div class="header-actions">
         {% if active_project and active_project_can_request %}
         <div class="desktop-request-btns">
-          <a class="btn btn-primary btn-sm" href="/projects/{{ active_project.id }}/request/feature">+ Ask for a feature</a>
-          <a class="btn btn-secondary btn-sm" href="/projects/{{ active_project.id }}/request/bug">! Report a bug</a>
+          <a class="btn btn-secondary btn-sm" href="/projects/{{ active_project.id }}/request/bug">Report a bug</a>
+          <a class="btn btn-primary btn-sm" href="/projects/{{ active_project.id }}/request/feature"><span class="btn-icon" aria-hidden="true">+</span> Ask for a feature</a>
         </div>
+        <span class="header-divider" aria-hidden="true"></span>
         {% endif %}
         {% if session %}
+        <nav class="header-nav" aria-label="Account">
           {% if session.is_demo %}
-            <a class="btn btn-ghost btn-sm" href="/demo/switch">Demo: {{ session.user_name.split(' ')[0] }}</a>
+            <a class="demo-chip" href="/demo/switch" title="Switch demo person">Demo: {{ session.user_name.split(' ')[0] }}</a>
           {% endif %}
-          <a class="btn btn-ghost btn-sm" href="/projects/select">Projects</a>
+          <a class="nav-link nav-link-secondary" href="/projects/select">Projects</a>
           {% if session.is_admin %}
-            <a class="btn btn-ghost btn-sm" href="/admin/health">Health</a>
+            <a class="nav-link nav-link-secondary" href="/admin/health">Health</a>
           {% endif %}
-          <a class="btn btn-text btn-sm" href="/logout">Sign out</a>
+          <a class="nav-link" href="/logout">Sign out</a>
+        </nav>
         {% endif %}
       </div>
     </div>
   </header>
   {% endif %}
 
-  <main id="main-content" class="container">
+  <main id="main-content" class="container {% block main_class %}{% endblock %}">
     {% if flash_error %}
       <div class="banner banner-reapprove" role="alert">{{ flash_error }}</div>
     {% endif %}
@@ -52,8 +57,8 @@
 
   {% if active_project and active_project_can_request %}
   <nav class="mobile-bottom-bar" aria-label="Quick requests">
-    <a class="btn btn-primary" href="/projects/{{ active_project.id }}/request/feature">+ Ask for a feature</a>
-    <a class="btn btn-secondary" href="/projects/{{ active_project.id }}/request/bug">! Report a bug</a>
+    <a class="btn btn-secondary" href="/projects/{{ active_project.id }}/request/bug">Report a bug</a>
+    <a class="btn btn-primary" href="/projects/{{ active_project.id }}/request/feature"><span class="btn-icon" aria-hidden="true">+</span> Ask for a feature</a>
   </nav>
   {% endif %}
 

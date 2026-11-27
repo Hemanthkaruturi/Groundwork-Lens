@@ -1,5 +1,6 @@
 {% extends "base.html" %}
 {% block title %}{{ project.display_name }} — Not Set Up{% endblock %}
+{% block main_class %}container-narrow{% endblock %}
 {% block content %}
 <h1 class="page-title">{{ project.display_name }}</h1>
 
@@ -15,13 +16,13 @@
 </div>
 
 <div class="card">
-  <h2 class="card-title">1. What you would see here</h2>
+  <div class="step-head"><span class="step-num">1</span><h2 class="card-title">What you would see here</h2></div>
   <p>Once GroundWork is enabled, this page shows four plain-language lists: what is waiting on a person, what needs approval, what is being built, and which bugs are open.</p>
   <a class="btn btn-secondary" href="/demo">See what Lens would show (demo)</a>
 </div>
 
 <div class="card">
-  <h2 class="card-title">2. Who can set it up</h2>
+  <div class="step-head"><span class="step-num">2</span><h2 class="card-title">Who can set it up</h2></div>
   {% if maintainers %}
     <p class="meta-line">Maintainers: {{ maintainers | join(', ') }}</p>
   {% endif %}
@@ -33,9 +34,9 @@
 </div>
 
 <div class="card">
-  <h2 class="card-title">3. How a developer sets it up</h2>
+  <div class="step-head"><span class="step-num">3</span><h2 class="card-title">How a developer sets it up</h2></div>
   <p class="meta-line">Run these commands in a local clone of the repository:</p>
-  <pre style="background: var(--page); padding: 12px; border-radius: 8px; overflow-x: auto;"><code>/plugin install groundwork-specflow
+  <pre class="code-block"><code>/plugin install groundwork-specflow
 /groundwork-specflow:init</code></pre>
 </div>
 {% endif %}

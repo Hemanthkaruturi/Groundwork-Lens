@@ -5,11 +5,12 @@
 {% block content %}
 <div class="center-page">
   <div class="signin-box">
+   <div class="signin-panel">
     <img src="/static/icon.svg" alt="GroundWork Lens" width="56" height="56">
-    <h1 class="page-title" style="margin-top: 12px;">
+    <h1 class="page-title">
       <span class="brand-wordmark-ground">Ground</span><span class="brand-wordmark-work">Work</span><span class="brand-wordmark-lens">Lens</span>
     </h1>
-    <p class="meta-line" style="font-size: 15px; margin-bottom: 24px;">
+    <p class="signin-lede">
       See what is being built, and what is waiting on whom.
     </p>
 
@@ -31,9 +32,9 @@
 
     {% for host in hosts %}
       {% if host.sign_in_mode == 'B' %}
-      <div class="card" style="margin-top: 20px; text-align: left;">
+      <div class="card">
         <h2 class="card-title">Sign in with a one-time profile token ({{ host.name }})</h2>
-        <p class="meta-line" style="margin-bottom: 10px;">
+        <p class="meta-line">
           {% if host.kind == 'gitlab' %}
             Paste a personal access token with only <code>read_user</code> scope.
           {% else %}
@@ -47,10 +48,10 @@
             <label class="field-label" for="pat-{{ host.id }}">One-time token</label>
             <input id="pat-{{ host.id }}" name="token" type="password" autocomplete="off" required placeholder="Paste profile-only token">
           </div>
-          <button class="btn btn-primary" type="submit" style="width: 100%;">Verify identity and sign in</button>
+          <button class="btn btn-primary btn-block" type="submit">Verify identity and sign in</button>
         </form>
 
-        <table class="clean-table" style="margin-top: 14px;">
+        <table class="clean-table mt-md">
           <tbody>
             <tr><th>What can my token do?</th><td>Read your own profile. Nothing else: no code, no projects, no writing.</td></tr>
             <tr><th>Is it stored?</th><td>No. It is used once at sign-in and discarded; it is never written to disk or logs.</td></tr>
@@ -63,14 +64,15 @@
     {% endfor %}
 
     {% if not hosts %}
-      <div class="card" style="margin-top: 16px;">
+      <div class="card">
         <p class="meta-line">No host is connected yet.</p>
         <a class="btn btn-primary" href="/setup">Open setup wizard</a>
       </div>
     {% endif %}
 
-    <div style="margin-top: 20px;">
-      <a href="/demo" class="meta-line">Try the demo</a>
+   </div>
+    <div class="signin-foot">
+      <a href="/demo">Try the demo</a>
     </div>
   </div>
 </div>
