@@ -1,7 +1,6 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" width="64" height="64" role="img" aria-label="GroundWork mark">
-  <rect x="4" y="4" width="56" height="56" rx="16" fill="#0C6D6A"/>
-  <path d="M4 44h56v0a16 16 0 0 1-16 16H20A16 16 0 0 1 4 44z" fill="#095451"/>
-  <path d="M17 44h30" stroke="#7FD8D1" stroke-width="3" stroke-linecap="round"/>
-  <circle cx="32" cy="27" r="11" fill="none" stroke="#FFFFFF" stroke-width="4"/>
-  <circle cx="32" cy="27" r="4" fill="#F5B53D"/>
+  <rect x="2" y="2" width="60" height="60" rx="16" fill="#1D1F24"/>
+  <circle cx="32" cy="30" r="13" fill="none" stroke="#FFFFFF" stroke-width="4.5"/>
+  <circle cx="32" cy="30" r="5" fill="#A9B4EC"/>
+  <path d="M18 50h28" stroke="#82BDD3" stroke-width="4" stroke-linecap="round"/>
 </svg>

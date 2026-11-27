@@ -2,7 +2,6 @@
 {% block title %}{% if kind == 'feature' %}Ask for a feature{% else %}Report a bug{% endif %} — {{ project.display_name }}{% endblock %}
 {% block main_class %}container-narrow{% endblock %}
 {% block content %}
-<a class="back-link" href="/projects/{{ project.id }}">&larr; {{ project.display_name }}</a>
 
 <h1 class="page-title mb-md">{% if kind == 'feature' %}Ask for a feature{% else %}Report a bug{% endif %}</h1>
 

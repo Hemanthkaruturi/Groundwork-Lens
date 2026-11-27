@@ -104,6 +104,20 @@ def create_app(data_dir: Path | str | None = None, start_worker: bool = False) -
         sep = "&" if "?" in url else "?"
         return app.redirect(f"{url}{sep}{urlencode(clean)}")
 
+    def _nav_projects(session: dict[str, Any] | None) -> list[dict[str, Any]]:
+        """Projects the signed-in user follows, for the sidebar."""
+        if not session:
+            return []
+        try:
+            return [
+                {"id": p["id"], "display_name": p["display_name"]}
+                for p in ctx.store.list_followed_projects(_user_key(session))
+            ]
+        except Exception:
+            return []
+
+    app.jinja.globals["nav_projects"] = _nav_projects
+
     @app.before_request
     def _attach_session(req: Request) -> Response | None:
         req.session = _current_session(req)
