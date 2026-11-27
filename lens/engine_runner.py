@@ -32,6 +32,23 @@ class UnsupportedSchemaError(EngineError):
         )
 
 
+# Network settings git needs if it has to fetch on demand inside a partial
+# clone (for example behind a corporate proxy or with a private CA).
+_PASSTHROUGH_ENV = (
+    "GIT_SSL_CAINFO",
+    "GIT_SSL_CAPATH",
+    "SSL_CERT_FILE",
+    "SSL_CERT_DIR",
+    "REQUESTS_CA_BUNDLE",
+    "HTTPS_PROXY",
+    "HTTP_PROXY",
+    "NO_PROXY",
+    "https_proxy",
+    "http_proxy",
+    "no_proxy",
+)
+
+
 def _scrubbed_env(tmp_home: str) -> dict[str, str]:
     env = {
         "PATH": os.environ.get("PATH", "/usr/local/bin:/usr/bin:/bin"),
@@ -41,6 +58,9 @@ def _scrubbed_env(tmp_home: str) -> dict[str, str]:
         "GIT_TERMINAL_PROMPT": "0",
         "GIT_CONFIG_NOSYSTEM": "1",
     }
+    for key in _PASSTHROUGH_ENV:
+        if os.environ.get(key):
+            env[key] = os.environ[key]
     return env
 
 

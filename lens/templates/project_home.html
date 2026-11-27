@@ -9,7 +9,7 @@
   </div>
 </div>
 
-{% set has_banners = project.archived or project.removed_groundwork_at or project.last_sync_status in ('unreachable', 'empty') or view.sub_repo_errors %}
+{% set has_banners = project.archived or project.removed_groundwork_at or project.last_sync_status in ('unreachable', 'empty', 'error', 'pending') or view.sub_repo_errors %}
 {% if has_banners %}
 <div class="banner-stack">
   {% if project.archived %}
@@ -24,6 +24,14 @@
     <div class="banner banner-reapprove">
       Lens can no longer read this repo: {{ project.last_sync_error }}
     </div>
+  {% endif %}
+  {% if project.last_sync_status == 'error' %}
+    <div class="banner banner-reapprove">
+      {{ project.last_sync_error }}. Lens tries again on the next sync, or click Refresh now.
+    </div>
+  {% endif %}
+  {% if project.last_sync_status == 'pending' %}
+    <div class="banner">Lens has not finished reading this repo yet. Refresh the page in a moment.</div>
   {% endif %}
   {% if project.last_sync_status == 'empty' %}
     <div class="banner">This repo is empty.</div>

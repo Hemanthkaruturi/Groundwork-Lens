@@ -39,7 +39,7 @@
   <div>
     <div class="row-between">
       <strong>{{ p.display_name }}</strong>
-      <span class="badge {% if p.last_sync_status == 'ok' %}badge-done{% elif p.last_sync_status in ('rate_limited', 'groundwork_removed') %}badge-waiting{% elif p.last_sync_status == 'unreachable' %}badge-reapprove{% endif %}">{{ p.last_sync_status }}</span>
+      <span class="badge {% if p.last_sync_status == 'ok' %}badge-done{% elif p.last_sync_status in ('rate_limited', 'groundwork_removed') %}badge-waiting{% elif p.last_sync_status in ('unreachable', 'error') %}badge-reapprove{% endif %}">{{ p.last_sync_status }}</span>
     </div>
     <div class="meta-line">Last sync: {{ p.last_sync_at or 'never' }}</div>
     {% if p.last_sync_error %}

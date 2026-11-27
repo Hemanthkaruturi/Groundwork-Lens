@@ -542,6 +542,36 @@ class LensStore:
             )
             self._conn.commit()
 
+    def get_follower_token_for_project(self, host_id: int, project_id: int) -> str:
+        """OAuth token of the most recent live session of someone who follows the project.
+
+        Used only for background sync on hosts that have no service token
+        (GitLab Mode A). Restricted to followers, so Lens only reads a project
+        with the token of a person who chose to see it.
+        """
+        now = int(time.time())
+        with self._lock:
+            rows = self._conn.execute(
+                """
+                SELECT s.user_token_enc FROM sessions s
+                JOIN user_projects up
+                  ON up.user_key = (CAST(s.host_id AS TEXT) || ':' || s.user_login)
+                 AND up.project_id = ?
+                WHERE s.host_id = ? AND s.is_demo = 0 AND s.expires_at >= ? AND s.user_token_enc != ''
+                ORDER BY s.created_at DESC
+                LIMIT 5
+                """,
+                (project_id, host_id, now),
+            ).fetchall()
+        for row in rows:
+            try:
+                tok = self.keys.decrypt_str(row["user_token_enc"])
+            except Exception:
+                continue
+            if tok:
+                return tok
+        return ""
+
     def get_session(self, session_id: str) -> dict[str, Any] | None:
         if not session_id:
             return None

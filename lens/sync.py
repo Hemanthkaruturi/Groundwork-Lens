@@ -149,12 +149,12 @@ class SyncWorker:
             return False, max(1, int(60 - elapsed))
         return True, 0
 
-    def trigger_manual_refresh(self, project_id: int) -> tuple[bool, str]:
+    def trigger_manual_refresh(self, project_id: int, user_token: str = "") -> tuple[bool, str]:
         ok, wait_s = self.can_manual_refresh(project_id)
         if not ok:
             return False, f"Refresh is limited to once per minute. Try again in {wait_s}s."
         self._last_manual_refresh[project_id] = time.time()
-        self.sync_project(project_id, force=True)
+        self.sync_project(project_id, force=True, user_token=user_token)
         return True, "Refreshed"
 
     def ensure_mirror(self, mirror_dir: Path, clone_url: str, export_paths: list[str]) -> None:
@@ -231,6 +231,17 @@ class SyncWorker:
             adapter = adapter_for_host(host)
             export_paths = get_export_paths()
 
+            # GitLab Mode A without a service token can only read private repos
+            # with a person's OAuth token. Background polls have none, so borrow
+            # the token of a signed-in person who follows this project.
+            needs_user_token = (
+                host.get("kind") == "gitlab"
+                and host.get("sign_in_mode") == "A"
+                and not host.get("service_token")
+            )
+            if needs_user_token and not user_token:
+                user_token = self.store.get_follower_token_for_project(host["id"], project_id)
+
             try:
                 repo_info = adapter.get_repo_info(proj["repo_full_name"], user_token=user_token)
             except RateLimitError as exc:
@@ -239,7 +250,13 @@ class SyncWorker:
                 )
                 return None
             except HostError as exc:
-                self.store.update_project_sync(project_id, "unreachable", str(exc))
+                msg = str(exc)
+                if needs_user_token and not user_token:
+                    msg += (
+                        ". Background sync needs a GitLab service token, or someone who follows this "
+                        "project to be signed in. Add a token in Setup, or sign in and click Refresh now."
+                    )
+                self.store.update_project_sync(project_id, "unreachable", msg)
                 return None
 
             if repo_info.empty:
@@ -270,16 +287,26 @@ class SyncWorker:
 
             main_snapshot: dict[str, Any] | None = None
             if need_main_export:
-                main_snapshot = self._export_ref_snapshot(
-                    project_id=project_id,
-                    proj=proj,
-                    adapter=adapter,
-                    mirror_dir=mirror_dir,
-                    ref_name=default_branch,
-                    fetch_spec=f"+refs/heads/{default_branch}:refs/remotes/origin/{default_branch}",
-                    export_paths=export_paths,
-                    user_token=user_token,
-                )
+                try:
+                    main_snapshot = self._export_ref_snapshot(
+                        project_id=project_id,
+                        proj=proj,
+                        adapter=adapter,
+                        mirror_dir=mirror_dir,
+                        ref_name=default_branch,
+                        fetch_spec=f"+refs/heads/{default_branch}:refs/remotes/origin/{default_branch}",
+                        export_paths=export_paths,
+                        user_token=user_token,
+                    )
+                except RateLimitError:
+                    raise
+                except Exception as exc:
+                    # Record the failure instead of leaving no snapshot behind,
+                    # which the UI would otherwise read as "GroundWork is not set up".
+                    self.store.update_project_sync(
+                        project_id, "error", f"Lens could not read the GroundWork data: {exc}"
+                    )
+                    return None
                 # Detect N8: GroundWork was present before, now removed
                 gw_stage = str((main_snapshot.get("groundwork") or {}).get("stage") or "not-started")
                 prev_gw = self.store.get_last_groundwork_snapshot(project_id)

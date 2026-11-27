@@ -2,22 +2,35 @@
 
 from __future__ import annotations
 
+import os
 import re
 import subprocess
 from pathlib import Path
 from typing import Any
 
+# Scanning history is the slowest step on large repos; give it room, but never
+# let one slow git call fail the whole export (callers treat a non-zero
+# return code as "no data").
+HISTORY_TIMEOUT_SECONDS = 120
+
 
 def _run_git(repo: Path, args: list[str], timeout: int = 30) -> subprocess.CompletedProcess[str]:
-    return subprocess.run(
-        ["git", "-c", "core.hooksPath=/dev/null", *args],
-        cwd=str(repo),
-        capture_output=True,
-        text=True,
-        encoding="utf-8",
-        errors="replace",
-        timeout=timeout,
-    )
+    env = dict(os.environ)
+    env["GIT_TERMINAL_PROMPT"] = "0"  # never block waiting for credentials
+    cmd = ["git", "-c", "core.hooksPath=/dev/null", *args]
+    try:
+        return subprocess.run(
+            cmd,
+            cwd=str(repo),
+            capture_output=True,
+            text=True,
+            encoding="utf-8",
+            errors="replace",
+            timeout=timeout,
+            env=env,
+        )
+    except subprocess.TimeoutExpired:
+        return subprocess.CompletedProcess(cmd, 124, "", f"git {args[0] if args else ''} timed out after {timeout}s")
 
 
 def get_head_commit(repo: Path) -> tuple[str, str]:
@@ -43,7 +56,14 @@ def scan_git_history(repo: Path, max_commits: int = 1000) -> tuple[dict[str, str
     if not (repo / ".git").exists() and not (repo / ".git").is_file():
         return {}, []
     fmt = "%h%x1f%aI%x1f%an%x1f%ae%x1f%s"
-    res = _run_git(repo, ["log", f"-n{max_commits}", f"--format={fmt}", "--name-only"])
+    # --no-renames: rename detection compares file contents. In the blobless
+    # partial clones Lens reads from, that downloads blobs commit by commit
+    # and turns a sub-second scan into minutes. Paths alone are enough here.
+    res = _run_git(
+        repo,
+        ["log", f"-n{max_commits}", f"--format={fmt}", "--name-only", "--no-renames"],
+        timeout=HISTORY_TIMEOUT_SECONDS,
+    )
     if res.returncode != 0:
         return {}, []
 
