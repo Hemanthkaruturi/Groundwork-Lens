@@ -1,0 +1,50 @@
+{% extends "base.html" %}
+{% block title %}{{ bug.title }} — GroundWork Lens{% endblock %}
+{% block content %}
+<div style="margin-bottom: 12px;">
+  <a class="meta-line" href="/projects/{{ project.id }}">&larr; Back to {{ project.display_name }}</a>
+</div>
+
+<div class="card">
+  <div class="row-between">
+    <h1 class="page-title" style="margin: 0;">{{ bug.title }}</h1>
+    <span class="badge {% if bug.severity in ('high', 'critical') %}badge-waiting{% endif %}">{{ bug.severity }}</span>
+  </div>
+  <div style="margin-top: 6px; font-weight: 600;">{{ bug.state_plain }}</div>
+  <div class="meta-line" style="margin-top: 6px;">
+    {% if bug.reported_by %}Reported by {{ bug.reported_by }}{% endif %}
+    {% if bug.owner %} · Owner: {{ bug.owner }}{% endif %}
+    {% if bug.rfc %} · RFC: <span class="mono-id">{{ bug.rfc }}</span>{% endif %}
+    {% if bug.feature %} · Feature: <span class="mono-id">{{ bug.feature }}</span>{% endif %}
+    · <span class="mono-id">{{ bug.id }}</span>
+  </div>
+</div>
+
+<div class="card">
+  <h2 class="card-title">Expected</h2>
+  <p>{{ bug.expected or 'Not specified.' }}</p>
+  <h2 class="card-title">Actual</h2>
+  <p>{{ bug.actual or 'Not specified.' }}</p>
+  {% if bug.where %}
+    <h2 class="card-title">Where and when</h2>
+    <p style="margin-bottom: 0;">{{ bug.where }}</p>
+  {% endif %}
+</div>
+
+<div class="card">
+  <h2 class="card-title">Timeline</h2>
+  {% if item_timeline %}
+    {% for ev in item_timeline %}
+    <div style="padding: 8px 0; border-bottom: 1px solid var(--border);">
+      <div class="row-between">
+        <strong>{{ ev.actor_display or ev.who or ev.type }}</strong>
+        <span class="meta-line"><time data-iso="{{ ev.at }}">{{ ev.at }}</time> · {{ ev.source }}</span>
+      </div>
+      {% if ev.detail %}<div>{{ ev.detail }}</div>{% endif %}
+    </div>
+    {% endfor %}
+  {% else %}
+    <p class="meta-line">No timeline events recorded yet.</p>
+  {% endif %}
+</div>
+{% endblock %}

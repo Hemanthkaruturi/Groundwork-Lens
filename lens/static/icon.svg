@@ -1,0 +1,8 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" width="64" height="64" role="img" aria-label="GroundWork mark">
+  <polygon points="14,6 46,6 54,14 54,50 46,58 14,58 6,50 6,14" fill="#0B3AA8"/>
+  <polygon points="14,6 42,6 54,18 54,50 46,58 14,58 6,50 6,14" fill="#0A2260"/>
+  <polygon points="42,6 54,18 42,18" fill="#2B90FF"/>
+  <path d="M22 24h16M22 33h12M22 42h18" stroke="#DCE3EF" stroke-width="3.5" stroke-linecap="round"/>
+  <circle cx="44" cy="44" r="11" fill="#10A36B"/>
+  <path d="M39 44l3.5 3.5L49 40.5" fill="none" stroke="#FFFFFF" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>
+</svg>

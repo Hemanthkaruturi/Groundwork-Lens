@@ -1,0 +1,45 @@
+{% extends "base.html" %}
+{% block title %}Portfolio — GroundWork Lens{% endblock %}
+{% block content %}
+<div class="row-between" style="margin-bottom: 12px;">
+  <h1 class="page-title" style="margin: 0;">Your projects</h1>
+  <a class="btn btn-ghost btn-sm" href="/projects/select">Manage projects</a>
+</div>
+
+{% if cards %}
+  {% for c in cards %}
+  <div class="card">
+    <div class="row-between">
+      <a href="/projects/{{ c.project.id }}" class="card-title" style="margin: 0;">{{ c.project.display_name }}</a>
+      <span class="meta-line">last activity {{ c.last_activity_rel }}</span>
+    </div>
+    {% if c.project.is_workspace %}
+      <span class="badge" style="margin-top: 4px;">Workspace</span>
+    {% endif %}
+    <div class="portfolio-counts">
+      <a class="count-pill" href="/projects/{{ c.project.id }}#waiting">
+        <strong>{{ c.counts.waiting }}</strong>
+        <span>Waiting on a person</span>
+      </a>
+      <a class="count-pill" href="/projects/{{ c.project.id }}#approvals">
+        <strong>{{ c.counts.approvals }}</strong>
+        <span>Ready for approval</span>
+      </a>
+      <a class="count-pill" href="/projects/{{ c.project.id }}#building">
+        <strong>{{ c.counts.building }}</strong>
+        <span>Being built</span>
+      </a>
+      <a class="count-pill" href="/projects/{{ c.project.id }}#bugs">
+        <strong>{{ c.counts.bugs }}</strong>
+        <span>Open bugs</span>
+      </a>
+    </div>
+  </div>
+  {% endfor %}
+{% else %}
+  <div class="card dot-grid-bg" style="text-align: center; padding: 32px 16px;">
+    <p class="meta-line">No projects followed yet.</p>
+    <a class="btn btn-primary" href="/projects/select">Choose projects</a>
+  </div>
+{% endif %}
+{% endblock %}

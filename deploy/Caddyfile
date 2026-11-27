@@ -1,0 +1,3 @@
+lens.example.com {
+    reverse_proxy groundwork-lens:8080
+}

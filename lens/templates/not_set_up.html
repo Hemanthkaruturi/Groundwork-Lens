@@ -1,0 +1,42 @@
+{% extends "base.html" %}
+{% block title %}{{ project.display_name }} — Not Set Up{% endblock %}
+{% block content %}
+<h1 class="page-title">{{ project.display_name }}</h1>
+
+{% if setup_pr %}
+<div class="card card-waiting">
+  <h2 class="card-title">GroundWork is being set up in PR #{{ setup_pr.number }}</h2>
+  <p>Once <a href="{{ setup_pr.url }}" target="_blank" rel="noopener noreferrer">{{ setup_pr.title }}</a> is merged, the dashboard will appear on the next refresh.</p>
+</div>
+{% else %}
+<div class="card dot-grid-bg">
+  <h2 class="card-title">GroundWork is not set up in this repo</h2>
+  <p class="meta-line">Requests need GroundWork in this repo. Ask a maintainer to set it up.</p>
+</div>
+
+<div class="card">
+  <h2 class="card-title">1. What you would see here</h2>
+  <p>Once GroundWork is enabled, this page shows four plain-language lists: what is waiting on a person, what needs approval, what is being built, and which bugs are open.</p>
+  <a class="btn btn-secondary" href="/demo">See what Lens would show (demo)</a>
+</div>
+
+<div class="card">
+  <h2 class="card-title">2. Who can set it up</h2>
+  {% if maintainers %}
+    <p class="meta-line">Maintainers: {{ maintainers | join(', ') }}</p>
+  {% endif %}
+  <div class="form-group">
+    <label class="field-label" for="n1-msg">Ready-to-copy message</label>
+    <textarea id="n1-msg" readonly>Could we set up GroundWork in {{ project.repo_full_name }}? It lets us see what is being built and what is waiting on whom in GroundWork Lens. Setup guide: {{ public_url }}/docs/install</textarea>
+  </div>
+  <button type="button" class="btn btn-primary" data-copy-target="#n1-msg">Copy message for maintainer</button>
+</div>
+
+<div class="card">
+  <h2 class="card-title">3. How a developer sets it up</h2>
+  <p class="meta-line">Run these commands in a local clone of the repository:</p>
+  <pre style="background: var(--page); padding: 12px; border-radius: 8px; overflow-x: auto;"><code>/plugin install groundwork-specflow
+/groundwork-specflow:init</code></pre>
+</div>
+{% endif %}
+{% endblock %}

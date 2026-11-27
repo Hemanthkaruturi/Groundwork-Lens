@@ -1,0 +1,87 @@
+{% extends "base.html" %}
+{% block title %}Admin Health — GroundWork Lens{% endblock %}
+{% block content %}
+<h1 class="page-title">System health</h1>
+<p class="meta-line" style="margin-bottom: 16px;">
+  GroundWork Lens v{{ lens_version }} · Bundled engine v{{ engine_version }} · Disk used: {{ disk_mb }} MB
+</p>
+
+{% for r in host_results %}
+<div class="card">
+  <div class="row-between">
+    <h2 class="card-title" style="margin: 0;">{{ r.host.name }} ({{ r.host.kind }}, Mode {{ r.host.sign_in_mode }})</h2>
+    <span class="badge {% if r.health.ok %}badge-done{% else %}badge-reapprove{% endif %}">
+      {% if r.health.ok %}Healthy{% else %}Needs attention{% endif %}
+    </span>
+  </div>
+  {% for w in r.health.warnings %}
+    <div class="banner banner-waiting" style="margin-top: 8px;">{{ w }}</div>
+  {% endfor %}
+  <table class="clean-table" style="margin-top: 8px;">
+    <tbody>
+      {% for chk in r.health.checks %}
+      <tr>
+        <td>{{ chk.name }}</td>
+        <td>{% if chk.ok %}<span class="badge badge-done">OK</span>{% else %}<span class="badge badge-reapprove">Fail</span>{% endif %}</td>
+        <td class="meta-line">{{ chk.detail }}</td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% endfor %}
+
+<div class="card">
+  <h2 class="card-title">Tracked projects</h2>
+  {% for p in projects %}
+  <div style="padding: 10px 0; border-bottom: 1px solid var(--border);">
+    <div class="row-between">
+      <strong>{{ p.display_name }}</strong>
+      <span class="badge {% if p.last_sync_status == 'ok' %}badge-done{% elif p.last_sync_status in ('rate_limited', 'groundwork_removed') %}badge-waiting{% elif p.last_sync_status == 'unreachable' %}badge-reapprove{% endif %}">{{ p.last_sync_status }}</span>
+    </div>
+    <div class="meta-line">Last sync: {{ p.last_sync_at or 'never' }}</div>
+    {% if p.last_sync_error %}
+      <div class="meta-line">Sync message: {{ p.last_sync_error }}</div>
+    {% endif %}
+    {% if p.last_refused_push_error %}
+      <div class="banner banner-waiting" style="margin-top: 6px;">Refused direct push: {{ p.last_refused_push_error }}</div>
+    {% endif %}
+    <form method="post" action="/admin/project-settings" class="stack-row" style="margin-top: 8px;">
+      <input type="hidden" name="_csrf" value="{{ csrf_token }}">
+      <input type="hidden" name="project_id" value="{{ p.id }}">
+      <label class="meta-line" for="idle-{{ p.id }}">No-activity notice days:</label>
+      <input id="idle-{{ p.id }}" name="idle_days" type="number" min="1" max="365" value="{{ p.idle_days }}" style="width: 90px; min-height: 44px;">
+      <button class="btn btn-ghost btn-sm" type="submit">Save</button>
+    </form>
+  </div>
+  {% endfor %}
+</div>
+
+<div class="card">
+  <h2 class="card-title">Recent webhook deliveries</h2>
+  {% if webhooks %}
+  <table class="clean-table">
+    <thead><tr><th>Time</th><th>Host</th><th>Event</th><th>Repo</th><th>Status</th></tr></thead>
+    <tbody>
+      {% for wh in webhooks %}
+      <tr>
+        <td class="meta-line">{{ wh.received_at }}</td>
+        <td>{{ wh.host_kind }}</td>
+        <td>{{ wh.event_type }}</td>
+        <td class="mono-id">{{ wh.repo_full_name }}</td>
+        <td>{{ wh.status }}</td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+  {% else %}
+    <p class="meta-line">No webhooks received yet.</p>
+  {% endif %}
+</div>
+
+<div class="card">
+  <h2 class="card-title">Diagnostics for issue reports</h2>
+  <textarea id="diag-json" readonly style="font-family: var(--font-mono); font-size: 12px;">{{ diagnostics_json }}</textarea>
+  <button type="button" class="btn btn-secondary btn-sm" data-copy-target="#diag-json" style="margin-top: 8px;">Copy diagnostics</button>
+</div>
+{% endblock %}

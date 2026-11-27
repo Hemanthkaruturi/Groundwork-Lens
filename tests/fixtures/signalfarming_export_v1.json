@@ -1,0 +1,330 @@
+{
+  "schema_version": "1.0",
+  "engine_version": "0.1.30",
+  "kind": "workspace",
+  "name": "SignalFarming",
+  "commit": "8c30feb",
+  "generated_at": "2026-11-26T09:00:00Z",
+  "repos": [
+    "researchTrail",
+    "llm-gateway",
+    "signalfarming-costs"
+  ],
+  "people": [
+    {
+      "name": "Hemanth Karuturi",
+      "role": "Owner and sole developer",
+      "contact": "karuturihemanth@gmail.com",
+      "aliases": [
+        "karuturihemanth@gmail.com",
+        "Hemanthkaruturi",
+        "Hemanth Karuturi"
+      ]
+    },
+    {
+      "name": "Amit Singh",
+      "role": "Leadership reviewer",
+      "contact": "amit@signalfarming.example",
+      "aliases": [
+        "amit@signalfarming.example",
+        "amitsingh",
+        "Amit Singh"
+      ]
+    }
+  ],
+  "items": [
+    {
+      "id": "signalfarming-costs/003-excel-export",
+      "kind": "feature",
+      "repo": "signalfarming-costs",
+      "title": "Excel export",
+      "rfc": "RFC-0012",
+      "stage": "build",
+      "state": "building — tasks 9/10",
+      "state_plain": "Being built: 9 of 10 steps done",
+      "legacy": false,
+      "owner": "Hemanth Karuturi",
+      "requested_by": "Hemanth Karuturi",
+      "last_activity": "2026-11-25T14:12:00+05:30",
+      "progress": {
+        "done": 9,
+        "total": 10,
+        "current": "T902 Run the manual tests"
+      },
+      "waiting_on": [
+        {
+          "person": "Hemanth Karuturi",
+          "task": "T902",
+          "what": "Run the manual tests in spec section 8 (T004 browser look, T006 E18/E19, T902)",
+          "inferred": false
+        }
+      ],
+      "last_note": {
+        "at": "2026-11-25T14:12:00+05:30",
+        "text": "003 deployed. Waiting on owner: spec section 8 by hand (T004 browser look, T006 E18/E19, T902). Then handover."
+      },
+      "summary": "Add a Download Excel option to the cost dashboard so finance reviewers can export monthly cost tables.",
+      "done_means": "On production, a signed-in viewer picks a date range and downloads a valid .xlsx workbook matching dashboard totals.",
+      "blocked_by": [],
+      "documents": [
+        {
+          "type": "spec",
+          "path": "specs/003-excel-export/spec.md",
+          "approval": "approved",
+          "approvers": [],
+          "signers": [
+            "karuturihemanth@gmail.com"
+          ],
+          "signed": [
+            {
+              "who": "karuturihemanth@gmail.com",
+              "when": "2026-11-24T10:00:00Z"
+            }
+          ],
+          "still_needed": [],
+          "can_approve": false,
+          "preflight_reason": "Already approved",
+          "body_hash": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "changes_since_approval": []
+        }
+      ],
+      "commits": [
+        {
+          "hash": "16139f7",
+          "at": "2026-11-25T13:40:00+05:30",
+          "author": "Hemanthkaruturi",
+          "subject": "spec 003: add Excel export endpoint and workbook builder"
+        }
+      ],
+      "changes": [],
+      "source_ref": "main"
+    },
+    {
+      "id": "researchTrail/038-named-decision-maker-contacts",
+      "kind": "feature",
+      "repo": "researchTrail",
+      "title": "Named decision-maker contacts",
+      "rfc": "RFC-0011",
+      "stage": "build",
+      "state": "building — tasks 22/24",
+      "state_plain": "Being built: 22 of 24 steps done",
+      "legacy": false,
+      "owner": "Hemanth Karuturi",
+      "requested_by": "Amit Singh",
+      "last_activity": "2026-11-08T11:30:00+05:30",
+      "progress": {
+        "done": 22,
+        "total": 24,
+        "current": "T013 Verify owner go-live checklist"
+      },
+      "waiting_on": [
+        {
+          "person": "Hemanth Karuturi",
+          "task": "T013",
+          "what": "Owner go-live (T013, T020)",
+          "inferred": true
+        }
+      ],
+      "last_note": {
+        "at": "2026-11-08T11:30:00+05:30",
+        "text": "deployed 2026-11-08... owner go-live (T013, T020) open"
+      },
+      "summary": "Show named decision-maker contacts alongside company research entries.",
+      "done_means": "Each decision-maker profile displays verified contact details after owner go-live sign-off.",
+      "blocked_by": [],
+      "documents": [
+        {
+          "type": "spec",
+          "path": "specs/038-named-decision-maker-contacts/spec.md",
+          "approval": "approved",
+          "approvers": [],
+          "signers": [
+            "karuturihemanth@gmail.com"
+          ],
+          "signed": [
+            {
+              "who": "karuturihemanth@gmail.com",
+              "when": "2026-11-01T09:00:00Z"
+            }
+          ],
+          "still_needed": [],
+          "can_approve": false,
+          "preflight_reason": "Already approved",
+          "body_hash": "a1b2c3d4e5f60000000000000000000000000000000000000000000000000001",
+          "changes_since_approval": []
+        }
+      ],
+      "commits": [
+        {
+          "hash": "9a8b7c6",
+          "at": "2026-11-08T11:00:00+05:30",
+          "author": "Hemanthkaruturi",
+          "subject": "spec 038: wire decision maker contact lookup"
+        }
+      ],
+      "changes": [
+        {
+          "at": "2026-11-07T16:20:00+05:30",
+          "who": "Hemanth Karuturi",
+          "via": "claude-code",
+          "summary": "Added pagination fallback for missing LinkedIn handle"
+        }
+      ],
+      "source_ref": "main"
+    },
+    {
+      "id": "researchTrail/bugs/011-discovery-price-stale",
+      "kind": "bug",
+      "repo": "researchTrail",
+      "title": "Discovery price stale",
+      "stage": "fixed",
+      "state": "fixed (design-flaw)",
+      "state_plain": "Fixed, waiting to be checked",
+      "severity": "medium",
+      "legacy": false,
+      "owner": "Hemanth Karuturi",
+      "reported_by": "Amit Singh",
+      "fixed_by": "Hemanth Karuturi",
+      "last_activity": "2026-11-24T18:00:00+05:30",
+      "expected": "Discovery price refreshes within 15 minutes of upstream quote update.",
+      "actual": "Cached discovery price remained stale for 24 hours after upstream update.",
+      "waiting_on": [
+        {
+          "person": "Amit Singh",
+          "task": "BUG-011",
+          "what": "Verify fix, then set status: closed",
+          "inferred": true
+        }
+      ],
+      "documents": [],
+      "commits": [],
+      "changes": [],
+      "source_ref": "main"
+    },
+    {
+      "id": "researchTrail/002-llm-gateway-client",
+      "kind": "feature",
+      "repo": "researchTrail",
+      "title": "LLM gateway client",
+      "rfc": "RFC-0009",
+      "stage": "spec",
+      "state": "spec — draft",
+      "state_plain": "Being planned (spec)",
+      "legacy": false,
+      "owner": "Hemanth Karuturi",
+      "requested_by": "Hemanth Karuturi",
+      "last_activity": "2026-11-24T12:00:00Z",
+      "summary": "Unify gateway client calls with retry and circuit breaker.",
+      "done_means": "All workers call the shared client with deterministic timeout handling.",
+      "blocked_by": [],
+      "waiting_on": [],
+      "documents": [
+        {
+          "type": "spec",
+          "path": "specs/002-llm-gateway-client/spec.md",
+          "approval": "draft",
+          "approvers": [
+            "Hemanth Karuturi"
+          ],
+          "signers": [],
+          "signed": [],
+          "still_needed": [
+            "Hemanth Karuturi"
+          ],
+          "can_approve": true,
+          "preflight_reason": "",
+          "body_hash": "b1b2c3d4e5f60000000000000000000000000000000000000000000000000002",
+          "changes_since_approval": []
+        }
+      ],
+      "commits": [],
+      "changes": [],
+      "source_ref": "main"
+    }
+  ],
+  "approvals_waiting": [
+    {
+      "document": "researchTrail/specs/002-llm-gateway-client/spec.md",
+      "state": "draft",
+      "needs": [
+        "Hemanth Karuturi"
+      ]
+    }
+  ],
+  "events": [
+    {
+      "at": "2026-11-25T13:58:16Z",
+      "type": "requested",
+      "item": "RFC-0012",
+      "who": "Hemanth Karuturi",
+      "source": "ledger"
+    },
+    {
+      "at": "2026-11-25T14:12:00+05:30",
+      "type": "note",
+      "item": "signalfarming-costs/003-excel-export",
+      "who": "Hemanth Karuturi",
+      "source": "note"
+    }
+  ],
+  "health": {
+    "check_errors": 0,
+    "check_warnings": 3,
+    "stale_documents": 1
+  },
+  "groundwork": {
+    "stage": "current",
+    "stage_number": 3,
+    "found": [
+      ".groundwork/config.json",
+      "PROJECT.md",
+      "ARCHITECTURE.md",
+      "CONSTITUTION.md"
+    ],
+    "missing": [],
+    "next_steps": [],
+    "unreadable": []
+  },
+  "sub_repo_groundwork": {
+    "researchTrail": {
+      "stage": "practicing",
+      "stage_number": 5,
+      "found": [
+        ".groundwork/config.json",
+        "PROJECT.md",
+        "ARCHITECTURE.md",
+        "CONSTITUTION.md"
+      ],
+      "missing": [],
+      "next_steps": [],
+      "unreadable": []
+    },
+    "llm-gateway": {
+      "stage": "documented",
+      "stage_number": 2,
+      "found": [
+        ".groundwork/config.json",
+        "PROJECT.md",
+        "ARCHITECTURE.md",
+        "CONSTITUTION.md"
+      ],
+      "missing": [],
+      "next_steps": [],
+      "unreadable": []
+    },
+    "signalfarming-costs": {
+      "stage": "practicing",
+      "stage_number": 5,
+      "found": [
+        ".groundwork/config.json",
+        "PROJECT.md",
+        "ARCHITECTURE.md",
+        "CONSTITUTION.md"
+      ],
+      "missing": [],
+      "next_steps": [],
+      "unreadable": []
+    }
+  },
+  "sub_repo_errors": {}
+}

@@ -1,0 +1,62 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>{% block title %}GroundWork Lens{% endblock %}</title>
+  <link rel="icon" type="image/svg+xml" href="/static/icon.svg">
+  <link rel="stylesheet" href="/static/style.css">
+</head>
+<body class="{% block body_class %}{% endblock %}">
+  <a class="skip-link" href="#main-content">Skip to content</a>
+  {% if not hide_header %}
+  <header class="site-header">
+    <div class="header-inner">
+      <a class="brand-link" href="{% if active_project %}/projects/{{ active_project.id }}{% elif session %}/portfolio{% else %}/{% endif %}">
+        <img src="/static/icon.svg" alt="" width="28" height="28">
+        <span>
+          <span class="brand-wordmark-full"><span class="brand-wordmark-ground">Ground</span><span class="brand-wordmark-work">Work</span></span><span class="brand-wordmark-lens">Lens</span>
+        </span>
+      </a>
+      <div class="header-actions">
+        {% if active_project and active_project_can_request %}
+        <div class="desktop-request-btns">
+          <a class="btn btn-primary btn-sm" href="/projects/{{ active_project.id }}/request/feature">+ Ask for a feature</a>
+          <a class="btn btn-secondary btn-sm" href="/projects/{{ active_project.id }}/request/bug">! Report a bug</a>
+        </div>
+        {% endif %}
+        {% if session %}
+          {% if session.is_demo %}
+            <a class="btn btn-ghost btn-sm" href="/demo/switch">Demo: {{ session.user_name.split(' ')[0] }}</a>
+          {% endif %}
+          <a class="btn btn-ghost btn-sm" href="/projects/select">Projects</a>
+          {% if session.is_admin %}
+            <a class="btn btn-ghost btn-sm" href="/admin/health">Health</a>
+          {% endif %}
+          <a class="btn btn-text btn-sm" href="/logout">Sign out</a>
+        {% endif %}
+      </div>
+    </div>
+  </header>
+  {% endif %}
+
+  <main id="main-content" class="container">
+    {% if flash_error %}
+      <div class="banner banner-reapprove" role="alert">{{ flash_error }}</div>
+    {% endif %}
+    {% if flash_info %}
+      <div class="banner banner-waiting" role="status">{{ flash_info }}</div>
+    {% endif %}
+    {% block content %}{% endblock %}
+  </main>
+
+  {% if active_project and active_project_can_request %}
+  <nav class="mobile-bottom-bar" aria-label="Quick requests">
+    <a class="btn btn-primary" href="/projects/{{ active_project.id }}/request/feature">+ Ask for a feature</a>
+    <a class="btn btn-secondary" href="/projects/{{ active_project.id }}/request/bug">! Report a bug</a>
+  </nav>
+  {% endif %}
+
+  <script src="/static/lens.js"></script>
+</body>
+</html>

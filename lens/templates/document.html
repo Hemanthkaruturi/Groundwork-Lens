@@ -1,0 +1,210 @@
+{% extends "base.html" %}
+{% block title %}{{ doc.title }} — Document Review{% endblock %}
+{% block content %}
+<div style="margin-bottom: 12px;" class="row-between">
+  <a class="meta-line" href="/projects/{{ project.id }}">&larr; Back to {{ project.display_name }}</a>
+  <a class="btn btn-ghost btn-sm" href="{{ doc.web_url }}" target="_blank" rel="noopener noreferrer">Open on host</a>
+</div>
+
+<!-- 1. Summary bar -->
+<div class="card {% if doc.approval == 'stale' %}card-reapprove{% elif doc.approval == 'in-review' %}card-waiting{% endif %}">
+  <div class="row-between">
+    <div>
+      <h1 class="page-title" style="margin-bottom: 2px;">{{ doc.title }}</h1>
+      <div class="meta-line">
+        {{ doc.type | upper }} · <span class="mono-id">{{ doc.path }}</span>
+        {% if doc.author %} · Author: {{ doc.author }}{% endif %}
+      </div>
+    </div>
+    <div>
+      {% if doc.approval == 'approved' %}
+        <span class="badge badge-done">Approved</span>
+      {% elif doc.approval == 'stale' %}
+        <span class="badge badge-reapprove">Changed after approval, needs re-approval</span>
+      {% elif doc.approval == 'in-review' %}
+        <span class="badge badge-waiting">Ready for approval</span>
+      {% else %}
+        <span class="badge">Draft</span>
+      {% endif %}
+    </div>
+  </div>
+
+  <div class="meta-line" style="margin-top: 8px;">
+    {% if doc.signed %}
+      Signed by: {{ doc.signed | map(attribute='who') | join(', ') }}.
+    {% else %}
+      No sign-offs yet.
+    {% endif %}
+    {% if doc.still_needed is iterable and doc.still_needed is not string and doc.still_needed %}
+      Waiting on: {{ doc.still_needed | join(', ') }}.
+    {% elif doc.still_needed is number and doc.still_needed > 0 %}
+      {{ doc.still_needed }} sign-off(s) still needed.
+    {% endif %}
+  </div>
+
+  {% if not doc.can_approve and doc.preflight_reason %}
+    <div class="banner banner-waiting" style="margin-top: 10px; margin-bottom: 0;">
+      Cannot approve yet: {{ doc.preflight_reason }}
+      {% if doc.blocking_rfc %}
+        — <a href="/projects/{{ project.id }}/item/{{ doc.blocking_rfc | urlencode }}">Approve {{ doc.blocking_rfc }} first</a>
+      {% endif %}
+    </div>
+  {% endif %}
+
+  <!-- Actions: Approve, Edit, Send back -->
+  <div class="stack-row" style="margin-top: 14px;">
+    {% if session.sign_in_mode == 'C' %}
+      <span class="meta-line">Approving and editing are turned off in Mode C (no login).</span>
+    {% else %}
+      {% if user_can_approve %}
+        {% if doc.can_approve and doc.approval != 'approved' %}
+          <form method="post" action="/projects/{{ project.id }}/doc/approve"
+                data-confirm="Approve {{ doc.title }} as you read it (version {{ doc.body_hash[:7] }})?">
+            <input type="hidden" name="_csrf" value="{{ csrf_token }}">
+            <input type="hidden" name="path" value="{{ doc.path }}">
+            <input type="hidden" name="repo" value="{{ repo_override }}">
+            <input type="hidden" name="ref" value="{{ target_ref }}">
+            <input type="hidden" name="pr" value="{{ pr_number }}">
+            <input type="hidden" name="expect_hash" value="{{ doc.body_hash }}">
+            {% if doc.approval == 'stale' and doc.type == 'spec' %}
+              <input type="text" name="change_note" placeholder="What changed and why?" required style="margin-bottom: 8px;">
+            {% endif %}
+            <button class="btn btn-primary" type="submit">Approve</button>
+          </form>
+        {% else %}
+          <button class="btn btn-primary" type="button" disabled style="opacity: 0.5; cursor: not-allowed;">Approve</button>
+        {% endif %}
+      {% elif doc.approvers %}
+        <span class="meta-line">Must be approved by: {{ doc.approvers | join(', ') }}.</span>
+      {% endif %}
+
+      {% if user_can_edit %}
+        <a class="btn btn-secondary" href="#doc-editor">Edit</a>
+      {% endif %}
+    {% endif %}
+  </div>
+</div>
+
+<!-- 2. Changes since last approval (stale) -->
+{% if doc.approval == 'stale' and doc.changes_since_approval %}
+<div class="card card-reapprove">
+  <h2 class="card-title">What changed since the last approval</h2>
+  {% for ch in doc.changes_since_approval %}
+    <div style="margin-top: 10px;">
+      <strong>{{ ch.section }}</strong>
+      {% if ch.note %}<div class="meta-line">{{ ch.note }}</div>{% endif %}
+      <div class="meta-line">+{{ ch.added_count }} added / -{{ ch.removed_count }} removed</div>
+      {% for line in ch.added %}
+        <div class="mono-id" style="color: var(--done-text);">+ {{ line }}</div>
+      {% endfor %}
+      {% for line in ch.removed %}
+        <div class="mono-id" style="color: var(--reapprove-text);">- {{ line }}</div>
+      {% endfor %}
+    </div>
+  {% endfor %}
+</div>
+{% endif %}
+
+<!-- 3. Front matter facts box -->
+{% if facts %}
+<div class="card">
+  <h2 class="card-title">Facts</h2>
+  <table class="clean-table">
+    <tbody>
+      {% for fk, fv in facts %}
+      <tr>
+        <th>{{ fk }}</th>
+        <td>{{ fv }}</td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% endif %}
+
+<!-- Table of Contents -->
+{% if toc %}
+<div class="card">
+  <h2 class="card-title">Contents</h2>
+  <ul style="margin: 6px 0 0; padding-left: 18px;">
+    {% for h in toc %}
+      <li style="margin-left: {{ (h.level - 1) * 12 }}px;">
+        <a href="#{{ h.slug }}">{{ h.text }}</a>
+      </li>
+    {% endfor %}
+  </ul>
+</div>
+{% endif %}
+
+<!-- Folded-corner Document Reader -->
+<article class="doc-reader-page md-body">
+  {{ rendered_html | safe }}
+</article>
+
+<!-- Edit Panel (Author or Named Approvers only) -->
+{% if user_can_edit and session.sign_in_mode != 'C' %}
+<div id="doc-editor" class="card" style="margin-top: 16px;">
+  <h2 class="card-title">Edit document body</h2>
+  {% if doc.approval == 'approved' %}
+    <div class="banner banner-waiting">
+      Saving removes the existing approvals ({{ doc.signed | map(attribute='who') | join(', ') }}). Everyone must approve again.
+    </div>
+  {% endif %}
+  <p class="meta-line">Front matter fields (status, approvers, signoffs_required) are locked.</p>
+  <form method="post" action="/projects/{{ project.id }}/doc/edit">
+    <input type="hidden" name="_csrf" value="{{ csrf_token }}">
+    <input type="hidden" name="path" value="{{ doc.path }}">
+    <input type="hidden" name="repo" value="{{ repo_override }}">
+    <input type="hidden" name="ref" value="{{ target_ref }}">
+    <input type="hidden" name="pr" value="{{ pr_number }}">
+    <input type="hidden" name="expect_hash" value="{{ doc.body_hash }}">
+
+    {% if doc.approval == 'approved' and doc.type == 'spec' %}
+    <div class="form-group">
+      <label class="field-label" for="edit-change-note">What changed and why?</label>
+      <input id="edit-change-note" name="change_note" type="text" required placeholder="Short explanation for ## Changes">
+    </div>
+    {% else %}
+    <div class="form-group">
+      <label class="field-label" for="edit-change-note">Change note (optional)</label>
+      <input id="edit-change-note" name="change_note" type="text" placeholder="Optional note">
+    </div>
+    {% endif %}
+
+    <div class="form-group">
+      <label class="field-label" for="doc-body-editor">Markdown body</label>
+      <textarea id="doc-body-editor" name="body" class="mono-editor">{{ doc.body }}</textarea>
+    </div>
+
+    <div class="stack-row">
+      <button type="button" id="btn-live-preview" class="btn btn-ghost">Live preview</button>
+      <button type="submit" name="action" value="save" class="btn btn-secondary">Save</button>
+      {% if user_can_approve and doc.can_approve %}
+        <button type="submit" name="action" value="save_and_approve" class="btn btn-primary">Save and approve</button>
+      {% endif %}
+    </div>
+  </form>
+  <div id="doc-live-preview-pane" class="md-body card hidden" style="margin-top: 12px;"></div>
+</div>
+{% endif %}
+
+<!-- Send back form -->
+{% if session.sign_in_mode != 'C' and user_can_approve %}
+<div class="card" style="margin-top: 16px;">
+  <h2 class="card-title">Send back to author</h2>
+  <form method="post" action="/projects/{{ project.id }}/doc/send-back">
+    <input type="hidden" name="_csrf" value="{{ csrf_token }}">
+    <input type="hidden" name="path" value="{{ doc.path }}">
+    <input type="hidden" name="repo" value="{{ repo_override }}">
+    <input type="hidden" name="ref" value="{{ target_ref }}">
+    <input type="hidden" name="pr" value="{{ pr_number }}">
+    <div class="form-group">
+      <label class="field-label" for="sendback-note">What needs to change?</label>
+      <textarea id="sendback-note" name="note" required placeholder="Write a clear note for the author"></textarea>
+    </div>
+    <button class="btn btn-text" type="submit">Send back</button>
+  </form>
+</div>
+{% endif %}
+
+{% endblock %}

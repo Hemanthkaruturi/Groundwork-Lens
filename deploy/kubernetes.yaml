@@ -1,0 +1,51 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: groundwork-lens
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: groundwork-lens
+  template:
+    metadata:
+      labels:
+        app: groundwork-lens
+    spec:
+      securityContext:
+        runAsUser: 10001
+        fsGroup: 10001
+      containers:
+        - name: groundwork-lens
+          image: ghcr.io/groundwork/groundwork-lens:1
+          ports:
+            - containerPort: 8080
+          env:
+            - name: LENS_PUBLIC_URL
+              value: "https://lens.example.com"
+          volumeMounts:
+            - name: data
+              mountPath: /data
+          livenessProbe:
+            httpGet:
+              path: /healthz
+              port: 8080
+          readinessProbe:
+            httpGet:
+              path: /healthz
+              port: 8080
+      volumes:
+        - name: data
+          persistentVolumeClaim:
+            claimName: groundwork-lens-data
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: groundwork-lens
+spec:
+  selector:
+    app: groundwork-lens
+  ports:
+    - port: 80
+      targetPort: 8080

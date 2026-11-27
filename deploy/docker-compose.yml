@@ -1,0 +1,16 @@
+services:
+  groundwork-lens:
+    image: ghcr.io/groundwork/groundwork-lens:1
+    container_name: groundwork-lens
+    restart: unless-stopped
+    ports:
+      - "8080:8080"
+    volumes:
+      - lens-data:/data
+    environment:
+      # Optional: override settings via environment variables
+      # LENS_PUBLIC_URL: https://lens.example.com
+      LENS_POLL_INTERVAL: "300"
+
+volumes:
+  lens-data:

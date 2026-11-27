@@ -1,0 +1,7 @@
+{
+  "name": "groundwork-lens",
+  "kind": "repo",
+  "engine_version": "0.1.30",
+  "default_branch": "main",
+  "signoffs_required": 1
+}

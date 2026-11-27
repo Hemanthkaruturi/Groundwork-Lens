@@ -1,0 +1,12 @@
+http:
+  routers:
+    groundwork-lens:
+      rule: "Host(`lens.example.com`)"
+      service: groundwork-lens
+      tls:
+        certResolver: letsencrypt
+  services:
+    groundwork-lens:
+      loadBalancer:
+        servers:
+          - url: "http://groundwork-lens:8080"

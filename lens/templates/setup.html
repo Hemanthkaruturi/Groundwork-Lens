@@ -1,0 +1,201 @@
+{% extends "base.html" %}
+{% block title %}Setup Wizard — GroundWork Lens{% endblock %}
+{% block content %}
+<h1 class="page-title">Set up GroundWork Lens</h1>
+<p class="meta-line" style="margin-bottom: 16px;">Connect GitHub or GitLab in a few minutes. All settings stay encrypted in <code>/data</code>.</p>
+
+{% if not setup_unlocked %}
+<div class="card">
+  <h2 class="card-title">Enter one-time setup code</h2>
+  <p class="meta-line" style="margin-bottom: 12px;">
+    Check your container logs (<code>docker logs groundwork-lens</code>) for the one-time setup code.
+  </p>
+  <form method="post" action="/setup/unlock">
+    <input type="hidden" name="_csrf" value="{{ csrf_token }}">
+    <div class="form-group">
+      <label class="field-label" for="setup-code">Setup code</label>
+      <input id="setup-code" name="setup_code" type="text" required placeholder="e.g. A1B2C3-D4E5F6">
+    </div>
+    <div class="stack-row">
+      <button class="btn btn-primary" type="submit">Continue</button>
+      <a class="btn btn-text" href="/demo">Try the demo first</a>
+    </div>
+  </form>
+</div>
+{% else %}
+
+<!-- Step 1: Public address -->
+<div class="card">
+  <h2 class="card-title">1. Public address</h2>
+  <p class="meta-line" style="margin-bottom: 10px;">Callback and webhook URLs are computed from this address.</p>
+  <form method="post" action="/setup/public-url">
+    <input type="hidden" name="_csrf" value="{{ csrf_token }}">
+    <div class="form-group">
+      <label class="field-label" for="public-url">Public URL {% if public_url_env %}(set by environment, read-only){% endif %}</label>
+      <input id="public-url" name="public_url" type="url" value="{{ public_url }}" {% if public_url_env %}readonly{% endif %} required>
+    </div>
+    {% if not public_url_env %}
+      <button class="btn btn-secondary btn-sm" type="submit">Save public address</button>
+    {% endif %}
+  </form>
+</div>
+
+<!-- Step 2 & 3 & 4: Connect GitHub -->
+<div class="card">
+  <h2 class="card-title">2. Connect GitHub (App Manifest or Service Token)</h2>
+  <p class="meta-line" style="margin-bottom: 12px;">
+    <strong>Mode A (Full login app, default):</strong> Most teams. Users sign in with GitHub and approve or request directly.<br>
+    <strong>Mode B (Profile-only + service token):</strong> When org rules forbid broad apps.<br>
+    <strong>Mode C (No login):</strong> One small team on a trusted internal network.
+  </p>
+
+  <form method="post" action="{{ github_base_url }}/settings/apps/new" style="margin-bottom: 16px;">
+    <input type="hidden" name="manifest" value="{{ github_manifest_json }}">
+    <button class="btn btn-primary" type="submit">Create GitHub App automatically</button>
+  </form>
+
+  <details>
+    <summary>Or enter GitHub credentials / Mode B &amp; C token manually</summary>
+    <form method="post" action="/setup/host" style="margin-top: 12px;">
+      <input type="hidden" name="_csrf" value="{{ csrf_token }}">
+      <input type="hidden" name="kind" value="github">
+      <div class="form-group">
+        <label class="field-label" for="gh-name">Display name</label>
+        <input id="gh-name" name="name" type="text" value="GitHub">
+      </div>
+      <div class="form-group">
+        <label class="field-label" for="gh-base">Base URL (GitHub.com or GitHub Enterprise Server)</label>
+        <input id="gh-base" name="base_url" type="url" value="{{ github_base_url }}">
+      </div>
+      <div class="form-group">
+        <label class="field-label" for="gh-api">API URL</label>
+        <input id="gh-api" name="api_url" type="url" value="https://api.github.com">
+      </div>
+      <div class="form-group">
+        <label class="field-label" for="gh-mode">Sign-in mode</label>
+        <select id="gh-mode" name="sign_in_mode">
+          <option value="A">Mode A — Full login app (default)</option>
+          <option value="B">Mode B — Profile-only login + service token</option>
+          <option value="C">Mode C — No login (trusted network)</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label class="field-label" for="gh-app-id">GitHub App ID (Mode A)</label>
+        <input id="gh-app-id" name="app_id" type="text">
+      </div>
+      <div class="form-group">
+        <label class="field-label" for="gh-cid">Client ID</label>
+        <input id="gh-cid" name="client_id" type="text">
+      </div>
+      <div class="form-group">
+        <label class="field-label" for="gh-csec">Client Secret</label>
+        <input id="gh-csec" name="client_secret" type="password">
+      </div>
+      <div class="form-group">
+        <label class="field-label" for="gh-pem">App Private Key PEM (Mode A)</label>
+        <textarea id="gh-pem" name="private_key" placeholder="-----BEGIN RSA PRIVATE KEY-----"></textarea>
+      </div>
+      <div class="form-group">
+        <label class="field-label" for="gh-tok">Fine-grained Service Token (Modes B/C — Contents &amp; PRs read/write)</label>
+        <input id="gh-tok" name="service_token" type="password">
+      </div>
+      <button class="btn btn-secondary" type="submit">Save GitHub host</button>
+    </form>
+  </details>
+</div>
+
+<!-- Connect GitLab -->
+<div class="card">
+  <h2 class="card-title">3. Connect GitLab</h2>
+  <p class="meta-line" style="margin-bottom: 10px;">
+    Create an application in GitLab (<strong>Group &rarr; Settings &rarr; Applications</strong> or User Settings) using these exact values:
+  </p>
+  <table class="clean-table" style="margin-bottom: 12px;">
+    <tbody>
+      <tr>
+        <th>Name</th>
+        <td><code>GroundWork Lens</code></td>
+        <td><button type="button" class="btn btn-ghost btn-sm" data-copy-text="GroundWork Lens">Copy</button></td>
+      </tr>
+      <tr>
+        <th>Redirect URI</th>
+        <td><code id="gl-cb">{{ public_url }}/auth/gitlab/callback</code></td>
+        <td><button type="button" class="btn btn-ghost btn-sm" data-copy-target="#gl-cb">Copy</button></td>
+      </tr>
+      <tr>
+        <th>Confidential</th>
+        <td>Checked</td>
+        <td></td>
+      </tr>
+      <tr>
+        <th>Scopes</th>
+        <td><code>read_user, read_api</code></td>
+        <td><button type="button" class="btn btn-ghost btn-sm" data-copy-text="read_user, read_api">Copy</button></td>
+      </tr>
+    </tbody>
+  </table>
+
+  <form method="post" action="/setup/host">
+    <input type="hidden" name="_csrf" value="{{ csrf_token }}">
+    <input type="hidden" name="kind" value="gitlab">
+    <div class="form-group">
+      <label class="field-label" for="gl-name">Display name</label>
+      <input id="gl-name" name="name" type="text" value="GitLab">
+    </div>
+    <div class="form-group">
+      <label class="field-label" for="gl-base">GitLab URL</label>
+      <input id="gl-base" name="base_url" type="url" value="https://gitlab.com">
+    </div>
+    <div class="form-group">
+      <label class="field-label" for="gl-mode">Sign-in mode</label>
+      <select id="gl-mode" name="sign_in_mode">
+        <option value="A">Mode A — Full login app (default)</option>
+        <option value="B">Mode B — Profile-only login + service token</option>
+        <option value="C">Mode C — No login (trusted network)</option>
+      </select>
+    </div>
+    <div class="form-group">
+      <label class="field-label" for="gl-cid">Application ID</label>
+      <input id="gl-cid" name="client_id" type="text">
+    </div>
+    <div class="form-group">
+      <label class="field-label" for="gl-csec">Secret</label>
+      <input id="gl-csec" name="client_secret" type="password">
+    </div>
+    <div class="form-group">
+      <label class="field-label" for="gl-tok">Project/Group Service Token (<code>read_api</code>, <code>read_repository</code>, <code>api</code>)</label>
+      <input id="gl-tok" name="service_token" type="password">
+    </div>
+    <button class="btn btn-secondary" type="submit">Save GitLab host</button>
+  </form>
+</div>
+
+<!-- Step 5 & 6: Check & Finish -->
+<div class="card">
+  <h2 class="card-title">4. Connected hosts &amp; Check</h2>
+  {% if hosts %}
+    {% for h in hosts %}
+      <div class="row-between" style="padding: 8px 0; border-bottom: 1px solid var(--border);">
+        <div>
+          <strong>{{ h.name }}</strong> <span class="badge">{{ h.kind }} · Mode {{ h.sign_in_mode }}</span>
+          <div class="meta-line">{{ h.base_url }}</div>
+        </div>
+        <form method="post" action="/setup/check">
+          <input type="hidden" name="_csrf" value="{{ csrf_token }}">
+          <input type="hidden" name="host_id" value="{{ h.id }}">
+          <button class="btn btn-ghost btn-sm" type="submit">Test connection</button>
+        </form>
+      </div>
+    {% endfor %}
+    <div style="margin-top: 14px;" class="stack-row">
+      <form method="post" action="/setup/complete">
+        <input type="hidden" name="_csrf" value="{{ csrf_token }}">
+        <button class="btn btn-primary" type="submit">Finish setup &amp; pick projects</button>
+      </form>
+    </div>
+  {% else %}
+    <p class="meta-line">Connect GitHub or GitLab above, or <a href="/demo">try demo mode</a> without a host.</p>
+  {% endif %}
+</div>
+{% endif %}
+{% endblock %}

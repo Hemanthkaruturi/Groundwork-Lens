@@ -1,0 +1,159 @@
+{% extends "base.html" %}
+{% block title %}{% if kind == 'feature' %}Ask for a feature{% else %}Report a bug{% endif %} — {{ project.display_name }}{% endblock %}
+{% block content %}
+<div style="margin-bottom: 12px;">
+  <a class="meta-line" href="/projects/{{ project.id }}">&larr; Back to {{ project.display_name }}</a>
+</div>
+
+<h1 class="page-title">{% if kind == 'feature' %}Ask for a feature{% else %}Report a bug{% endif %}</h1>
+
+{% if gw_disabled %}
+  <div class="card card-waiting">
+    <p>Requests need GroundWork in this repo. Ask a maintainer to set it up.</p>
+    <a class="btn btn-secondary" href="/projects/{{ project.id }}/not-set-up">See setup help</a>
+  </div>
+{% else %}
+
+  {% if read_only_note %}
+  <div class="banner banner-waiting">{{ read_only_note }}</div>
+  {% endif %}
+
+  {% if preview %}
+  <div class="card">
+    <h2 class="card-title">Preview your request before submitting</h2>
+    <p class="meta-line">This is saved exactly as typed. The coding agent's interview will start from these words.</p>
+    <table class="clean-table" style="margin-top: 10px;">
+      <tbody>
+        <tr><th>Title</th><td>{{ fields.title }}</td></tr>
+        {% if kind == 'feature' %}
+          <tr><th>What is needed</th><td>{{ fields.need }}</td></tr>
+          <tr><th>What "done" looks like</th><td>{{ fields.done_looks_like }}</td></tr>
+          {% if fields.why_now %}<tr><th>Why now</th><td>{{ fields.why_now }}</td></tr>{% endif %}
+        {% else %}
+          <tr><th>What I expected</th><td>{{ fields.expected }}</td></tr>
+          <tr><th>What happened instead</th><td>{{ fields.actual }}</td></tr>
+          <tr><th>Where and when</th><td>{{ fields.where_when }}</td></tr>
+          <tr><th>Severity</th><td>{{ fields.severity }}</td></tr>
+          {% if fields.links %}<tr><th>Links</th><td>{{ fields.links }}</td></tr>{% endif %}
+        {% endif %}
+        <tr><th>Product area</th><td>{{ fields.product_area }}</td></tr>
+      </tbody>
+    </table>
+    <form method="post" action="/projects/{{ project.id }}/request/{{ kind }}" style="margin-top: 14px;">
+      <input type="hidden" name="_csrf" value="{{ csrf_token }}">
+      <input type="hidden" name="step" value="submit">
+      {% for k, v in fields.items() %}
+        <input type="hidden" name="{{ k }}" value="{{ v }}">
+      {% endfor %}
+      <div class="stack-row">
+        <button class="btn btn-primary" type="submit">Submit request</button>
+        <a class="btn btn-ghost" href="/projects/{{ project.id }}/request/{{ kind }}">Edit</a>
+      </div>
+    </form>
+  </div>
+  {% else %}
+
+  <form method="post" action="/projects/{{ project.id }}/request/{{ kind }}" enctype="multipart/form-data">
+    <input type="hidden" name="_csrf" value="{{ csrf_token }}">
+    <input type="hidden" name="step" value="{{ 'submit' if allow_direct_submit else 'preview' }}">
+
+    {% if session.sign_in_mode == 'C' %}
+    <div class="form-group">
+      <label class="field-label" for="req-by">Your name</label>
+      {% if people %}
+        <select id="req-by" name="requested_by" required>
+          {% for p in people %}
+            <option value="{{ p.name }}">{{ p.name }}</option>
+          {% endfor %}
+        </select>
+      {% else %}
+        <input id="req-by" name="requested_by" type="text" required placeholder="Your name">
+      {% endif %}
+    </div>
+    {% endif %}
+
+    <div class="form-group">
+      <label class="field-label" for="req-title">{% if kind == 'feature' %}Title{% else %}Short title{% endif %}</label>
+      <input id="req-title" name="title" type="text" required value="{{ fields.get('title', '') }}" placeholder="Short plain-language name">
+    </div>
+
+    {% if kind == 'feature' %}
+    <div class="form-group">
+      <label class="field-label" for="req-need">What is needed, and for whom</label>
+      <textarea id="req-need" name="need" required>{{ fields.get('need', '') }}</textarea>
+      {% if example_summary %}
+        <div class="help-example"><strong>Example from this project:</strong> {{ example_summary }}</div>
+      {% endif %}
+    </div>
+
+    <div class="form-group">
+      <label class="field-label" for="req-done">What "done" would look like</label>
+      <textarea id="req-done" name="done_looks_like" required>{{ fields.get('done_looks_like', '') }}</textarea>
+      {% if example_done %}
+        <div class="help-example"><strong>Example from this project:</strong> {{ example_done }}</div>
+      {% endif %}
+    </div>
+
+    <div class="form-group">
+      <label class="field-label" for="req-why">Why now, and where it came from (optional)</label>
+      <textarea id="req-why" name="why_now">{{ fields.get('why_now', '') }}</textarea>
+    </div>
+
+    {% else %}
+    <div class="form-group">
+      <label class="field-label" for="bug-expected">What I expected</label>
+      <textarea id="bug-expected" name="expected" required>{{ fields.get('expected', '') }}</textarea>
+    </div>
+
+    <div class="form-group">
+      <label class="field-label" for="bug-actual">What happened instead</label>
+      <textarea id="bug-actual" name="actual" required>{{ fields.get('actual', '') }}</textarea>
+    </div>
+
+    <div class="form-group">
+      <label class="field-label" for="bug-where">Where and when I saw it (page, account, time)</label>
+      <input id="bug-where" name="where_when" type="text" required value="{{ fields.get('where_when', '') }}">
+    </div>
+
+    <div class="form-group">
+      <label class="field-label" for="bug-sev">How bad is it</label>
+      <select id="bug-sev" name="severity" required>
+        <option value="low">Low — minor visual or wording annoyance</option>
+        <option value="medium" selected>Medium — workflow slower, workaround exists</option>
+        <option value="high">High — important task blocked, no easy workaround</option>
+        <option value="critical">Critical — outage or wrong data affecting everyone</option>
+      </select>
+    </div>
+
+    <div class="form-group">
+      <label class="field-label" for="bug-links">Links (recording, ticket — optional)</label>
+      <input id="bug-links" name="links" type="text" value="{{ fields.get('links', '') }}">
+    </div>
+    {% endif %}
+
+    <div class="form-group">
+      <label class="field-label" for="req-area">Which product area</label>
+      <select id="req-area" name="product_area" required>
+        {% for area in product_areas %}
+          <option value="{{ area }}">{{ area }}</option>
+        {% endfor %}
+      </select>
+    </div>
+
+    <div class="form-group">
+      <label class="field-label" for="request-images-input">Screenshots (optional, up to 5 images, max 5 MB each)</label>
+      <input id="request-images-input" name="images" type="file" multiple accept="image/png,image/jpeg,image/webp,image/gif">
+      <div id="request-images-info" class="meta-line" style="margin-top: 4px;"></div>
+      <div class="banner banner-waiting" style="margin-top: 8px;">
+        Images stay in the repository's git history for good and hidden metadata is stripped on upload. Do not attach passwords, keys, or customer data.
+      </div>
+    </div>
+
+    <div class="stack-row">
+      <button class="btn btn-secondary" type="submit" name="action_mode" value="preview">Preview request</button>
+      <button class="btn btn-primary" type="submit" name="action_mode" value="submit">Submit request</button>
+    </div>
+  </form>
+  {% endif %}
+{% endif %}
+{% endblock %}

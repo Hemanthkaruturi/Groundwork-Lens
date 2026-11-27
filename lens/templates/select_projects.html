@@ -1,0 +1,56 @@
+{% extends "base.html" %}
+{% block title %}Choose Projects — GroundWork Lens{% endblock %}
+{% block content %}
+<h1 class="page-title">Choose projects to follow</h1>
+<p class="meta-line" style="margin-bottom: 16px;">
+  Pick the repositories or GroundWork workspaces you want on your dashboard. Following a workspace automatically includes its sub-repos.
+</p>
+
+{% if repos %}
+<form method="post" action="/projects/select">
+  <input type="hidden" name="_csrf" value="{{ csrf_token }}">
+  <div class="stack-sm">
+    {% for r in repos %}
+    <label class="card" style="display: flex; align-items: flex-start; gap: 12px; cursor: pointer;">
+      <input type="checkbox" name="repo_keys" value="{{ r.host_id }}:{{ r.full_name }}"
+             {% if r.followed %}checked{% endif %}
+             style="width: 22px; height: 22px; margin-top: 2px;">
+      <div style="flex: 1;">
+        <div class="row-between">
+          <strong>{{ r.name }}</strong>
+          {% if r.is_workspace %}
+            <span class="badge">Workspace</span>
+          {% elif r.has_groundwork %}
+            <span class="badge badge-done">GroundWork</span>
+          {% else %}
+            <span class="badge">Not set up</span>
+          {% endif %}
+        </div>
+        <div class="meta-line">{{ r.full_name }}</div>
+        {% if not r.has_groundwork %}
+          <div class="meta-line" style="margin-top: 4px;">GroundWork is not set up here yet.</div>
+        {% endif %}
+      </div>
+    </label>
+    {% endfor %}
+  </div>
+  <button class="btn btn-primary" type="submit" style="margin-top: 12px;">Save and view projects</button>
+</form>
+{% else %}
+  <div class="card">
+    <p class="meta-line">No repositories listed from the host yet. You can follow a public repo below or open Demo mode.</p>
+  </div>
+{% endif %}
+
+<div class="card" style="margin-top: 24px;">
+  <h2 class="card-title">Follow a public repository (no token needed)</h2>
+  <form method="post" action="/projects/public">
+    <input type="hidden" name="_csrf" value="{{ csrf_token }}">
+    <div class="form-group">
+      <label class="field-label" for="public-repo">Repository URL or owner/name</label>
+      <input id="public-repo" name="repo" type="text" placeholder="owner/repo or https://github.com/owner/repo" required>
+    </div>
+    <button class="btn btn-secondary" type="submit">Follow public repo</button>
+  </form>
+</div>
+{% endblock %}

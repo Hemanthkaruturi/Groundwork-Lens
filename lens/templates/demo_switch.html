@@ -1,0 +1,18 @@
+{% extends "base.html" %}
+{% block title %}Demo Persona — GroundWork Lens{% endblock %}
+{% block content %}
+<h1 class="page-title">Switch demo person</h1>
+<p class="meta-line" style="margin-bottom: 16px;">See how "Waiting on me", editing, and approval look for each role.</p>
+
+<form method="post" action="/demo/switch" class="stack-sm">
+  <input type="hidden" name="_csrf" value="{{ csrf_token }}">
+  <button class="card card-clickable" type="submit" name="persona" value="leader" style="text-align: left; cursor: pointer;">
+    <div class="card-title">Amit Singh (Leadership reviewer)</div>
+    <div class="meta-line">Has pending approval on RFC-0013 and pending interview questions on REQ-0001.</div>
+  </button>
+  <button class="card card-clickable" type="submit" name="persona" value="developer" style="text-align: left; cursor: pointer;">
+    <div class="card-title">Hemanth Karuturi (Owner &amp; sole developer)</div>
+    <div class="meta-line">Has manual tasks waiting on him and stale spec 038 needing re-approval.</div>
+  </button>
+</form>
+{% endblock %}
